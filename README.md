@@ -35,13 +35,13 @@
 
 | Step | 機能 | 主要RFC | 章/セクション |
 |------|------|---------|---------------|
-| 1-3 | 基本通信・Handshake | RFC 793 | Section 3.2, 3.4 |
-| 4 | 状態管理 | RFC 793 | Section 3.2, Figure 6 |
-| 5-6 | データ転送・ACK | RFC 793 | Section 3.3, 3.7 |
-| 7-8 | 再送・順序制御 | RFC 793 | Section 3.7 |
-| 9 | フロー制御 | RFC 793 | Section 3.7 |
+| 1-3 | 基本通信・Handshake | RFC 9293 | Section 3.2, 3.8.1 |
+| 4 | 状態管理 | RFC 9293 | Section 3.2, 3.2.3 |
+| 5-6 | データ転送・ACK | RFC 9293 | Section 3.9 |
+| 7-8 | 再送・順序制御 | RFC 9293 | Section 3.9 |
+| 9 | フロー制御 | RFC 9293 | Section 3.9 |
 | 10-11 | 輻輳制御 | RFC 5681 | Section 3, 4 |
-| 12 | 接続終了 | RFC 793 | Section 3.5 |
+| 12 | 接続終了 | RFC 9293 | Section 3.6 |
 
 ## 🛠️ 開発環境
 
