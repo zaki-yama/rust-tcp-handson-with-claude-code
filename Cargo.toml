@@ -1,6 +1,13 @@
 [package]
 name = "rust-tcp-handson-with-claude-code"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+libc = "0.2"
+log = "0.4"
+env_logger = "0.10"
+
+[[bin]]
+name = "step01"
+path = "src/step01/main.rs"
