@@ -22,6 +22,24 @@ src/
 └── lib.rs
 ```
 
+## Learning Documentation Guidelines
+
+**IMPORTANT**: All content-related questions and answers should be recorded in `LEARNING_LOG.md` files.
+
+### Learning Log Management
+- **Location**: Each step directory contains its own `LEARNING_LOG.md`
+- **Content**: Q&A sessions, concept explanations, implementation guidance
+- **Purpose**: Create a comprehensive learning record for review and reference
+- **Format**: Markdown with clear sections for different topics
+
+### Example Structure
+```
+src/step01/LEARNING_LOG.md
+src/step02/LEARNING_LOG.md
+src/step03/LEARNING_LOG.md
+...
+```
+
 ## Basic Learning Guidance Principles
 
 ### 1. Step-by-step Learning Support
