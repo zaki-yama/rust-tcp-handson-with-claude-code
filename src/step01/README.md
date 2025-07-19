@@ -63,8 +63,8 @@ impl IpHeader {
 ```rust
 impl IpHeader {
     fn calculate_checksum(&mut self) {
-        // RFC 791のチェックサムアルゴリズム実装
-        // 16ビット単位での加算とキャリー処理
+        // RFC 1071のチェックサムアルゴリズム実装
+        // 16ビット単位での1の補数加算とキャリー処理
     }
 }
 ```
@@ -168,7 +168,13 @@ let socket_fd = unsafe {
 **RFC 791 - Section 3.1**: Internet Header Format
 - IPヘッダーの詳細構造
 - 各フィールドの意味と使用方法
-- チェックサム計算アルゴリズム
+- チェックサム計算の概要
+
+**RFC 1071**: Computing the Internet Checksum
+- IPヘッダーチェックサムの詳細実装アルゴリズム
+- 16bit単位での1の補数加算
+- キャリー処理とパフォーマンス最適化
+- IP、TCP、UDP共通のチェックサム計算方式
 
 **RFC 9293 - Section 2**: TCP Overview
 - TCP/IPアーキテクチャの基本概念
