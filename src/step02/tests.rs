@@ -22,8 +22,10 @@ mod phase_b_tests {
         assert_eq!(u32::from_be(header.sequence_number), 1000);
         assert_eq!(u32::from_be(header.acknowledgment_number), 0);
         assert_eq!(u16::from_be(header.window_size), 8192);
-        assert_eq!(header.checksum, 0); // 初期値は0
-        assert_eq!(header.urgent_pointer, 0); // 初期値は0
+        let checksum = header.checksum;
+        assert_eq!(checksum, 0); // 初期値は0
+        let urgent_pointer = header.urgent_pointer;
+        assert_eq!(urgent_pointer, 0); // 初期値は0
     }
 
     #[test]
@@ -241,7 +243,8 @@ mod phase_d_tests {
         header.calculate_checksum(src_ip, dst_ip, tcp_data);
 
         // チェックサムが計算されて0以外になっているかチェック
-        assert_ne!(header.checksum, 0);
+        let checksum = header.checksum;
+        assert_ne!(checksum, 0);
 
         // 検証テスト
         assert!(header.verify_checksum(src_ip, dst_ip, tcp_data));

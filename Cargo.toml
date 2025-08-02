@@ -11,3 +11,7 @@ env_logger = "0.10"
 [[bin]]
 name = "step01"
 path = "src/step01/main.rs"
+
+[[bin]]
+name = "step02"
+path = "src/step02/main.rs"
