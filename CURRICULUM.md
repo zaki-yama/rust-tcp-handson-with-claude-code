@@ -15,7 +15,7 @@
 - IPパケットの作成・送信
 - パケット受信とログ出力
 
-**RFC参照**: RFC 793 - Section 2.1 (基本概念)
+**RFC参照**: RFC 9293 - Section 2.1 (基本概念) (※RFC 793を2022年に更新)
 
 **成果物**:
 - 基本的なパケット送受信プログラム
@@ -41,7 +41,7 @@
 - チェックサム計算・検証
 - ヘッダー生成機能
 
-**RFC参照**: RFC 793 - Section 3.1 (Header Format)
+**RFC参照**: RFC 9293 - Section 3.1 (Header Format) (※RFC 793を2022年に更新)
 
 **成果物**:
 - `TcpHeader`構造体
@@ -69,7 +69,7 @@
 - ACKパケット送信
 - 基本的な状態管理
 
-**RFC参照**: RFC 793 - Section 3.4 (Establishing a connection)
+**RFC参照**: RFC 9293 - Section 3.4 (Establishing a connection) (※RFC 793を2022年に更新)
 
 **成果物**:
 - 3-way handshake実装
@@ -98,7 +98,7 @@
 - イベント処理システム
 - 状態遷移図の実装
 
-**RFC参照**: RFC 793 - Section 3.2, Figure 6 (State Diagram)
+**RFC参照**: RFC 9293 - Section 3.2, Figure 6 (State Diagram) (※RFC 793を2022年に更新)
 
 **成果物**:
 - 完全な状態マシン実装
@@ -126,7 +126,7 @@
 - シーケンス番号管理
 - セグメント分割ロジック
 
-**RFC参照**: RFC 793 - Section 3.3 (Sequence Numbers)
+**RFC参照**: RFC 9293 - Section 3.3 (Sequence Numbers) (※RFC 793を2022年に更新)
 
 **成果物**:
 - データ送受信機能
@@ -154,7 +154,7 @@
 - 未確認データ追跡
 - ウィンドウサイズ計算
 
-**RFC参照**: RFC 793 - Section 3.7 (Data Communication)
+**RFC参照**: RFC 9293 - Section 3.7 (Data Communication) (※RFC 793を2022年に更新)
 
 **成果物**:
 - ACK処理システム
@@ -212,7 +212,7 @@
 - データ再組み立て機能
 - ギャップ検出
 
-**RFC参照**: RFC 793 - Section 3.7 (Data Communication)
+**RFC参照**: RFC 9293 - Section 3.7 (Data Communication) (※RFC 793を2022年に更新)
 
 **成果物**:
 - 順序制御システム
@@ -240,7 +240,7 @@
 - フロー制御アルゴリズム
 - バッファ溢れ防止
 
-**RFC参照**: RFC 793 - Section 3.7 (Data Communication)
+**RFC参照**: RFC 9293 - Section 3.7 (Data Communication) (※RFC 793を2022年に更新)
 
 **成果物**:
 - フロー制御システム
@@ -328,7 +328,7 @@
 - TIME_WAIT実装
 - リソースクリーンアップ
 
-**RFC参照**: RFC 793 - Section 3.5 (Closing a Connection)
+**RFC参照**: RFC 9293 - Section 3.5 (Closing a Connection) (※RFC 793を2022年に更新)
 
 **成果物**:
 - 接続終了システム

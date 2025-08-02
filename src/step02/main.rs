@@ -2,7 +2,7 @@ use std::net::Ipv4Addr;
 
 const TCP_HEADER_SIZE: usize = 20;
 
-/// TCP Header Structure (RFC 793 Section 3.1)
+/// TCP Header Structure (RFC 9293 Section 3.1 - 2022 updated standard)
 ///
 /// 0                   1                   2                   3
 /// 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -168,8 +168,4 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    // Tests will be defined in tests.rs for better organization
-}
+mod tests; // Load tests from tests.rs file
