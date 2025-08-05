@@ -13,34 +13,45 @@ const TCP_HEADER_SIZE: usize = 20;
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /// |                    Acknowledgment Number                      |
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-/// |  Data |           |U|A|P|R|S|F|                               |
-/// | Offset| Reserved  |R|C|S|S|Y|I|            Window             |
-/// |       |           |G|K|H|T|N|N|                               |
+/// |  Data |       |C|E|U|A|P|R|S|F|                               |
+/// | Offset| Rsrvd |W|C|R|C|S|S|Y|I|            Window             |
+/// |       |       |R|E|G|K|H|T|N|N|                               |
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /// |           Checksum            |         Urgent Pointer        |
+/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/// |                           [Options]                           |
+/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/// |                                                               :
+/// :                             Data                              :
+/// :                                                               |
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 struct TcpHeader {
     source_port: u16,
     destination_port: u16,
+    // シーケンス番号。初期値はコネクション確立時に乱数で決定される
     sequence_number: u32,
+    // 確認応答番号。次に受信すべきデータのシーケンス番号
     acknowledgment_number: u32,
-    data_offset_and_flags: u16, // Data Offset(4bit) + Reserved(6bit) + Flags(6bit)
+    // Data Offset(4bit) + Reserved(4bit) + Flags(8bit)
+    data_offset_and_flags: u16,
     window_size: u16,
     checksum: u16,
     urgent_pointer: u16,
 }
 
-/// TCP Flags
+/// TCP Flags (RFC 9293 Section 3.1)
 #[allow(dead_code)]
 mod tcp_flags {
-    pub const FIN: u8 = 0x01;
-    pub const SYN: u8 = 0x02;
-    pub const RST: u8 = 0x04;
-    pub const PSH: u8 = 0x08;
-    pub const ACK: u8 = 0x10;
-    pub const URG: u8 = 0x20;
+    pub const FIN: u8 = 0x01; // No more data from sender
+    pub const SYN: u8 = 0x02; // Synchronize sequence numbers
+    pub const RST: u8 = 0x04; // Reset the connection
+    pub const PSH: u8 = 0x08; // Push function
+    pub const ACK: u8 = 0x10; // Acknowledgment field is significant
+    pub const URG: u8 = 0x20; // Urgent pointer field is significant
+    pub const ECE: u8 = 0x40; // ECN-Echo
+    pub const CWR: u8 = 0x80; // Congestion Window Reduced
 }
 
 impl TcpHeader {
@@ -48,19 +59,23 @@ impl TcpHeader {
     ///
     /// # Arguments
     /// * `src_port` - Source port number
-    /// * `dst_port` - Destination port number  
+    /// * `dst_port` - Destination port number
     /// * `seq` - Sequence number
     /// * `ack` - Acknowledgment number
-    /// * `flags` - TCP flags (6 bits)
+    /// * `flags` - TCP flags (8 bits)
     /// * `window` - Window size
     fn new(src_port: u16, dst_port: u16, seq: u32, ack: u32, flags: u8, window: u16) -> Self {
-        // TODO: Task B2 - Implement constructor
-        // Hints:
-        // - Convert port numbers to network byte order with to_be()
-        // - Data Offset should be 5 (20 bytes ÷ 4)
-        // - Combine data_offset (4bits) + reserved (6bits) + flags (6bits) into 16bit field
-        // - Set checksum to 0 initially (will be calculated later)
-        todo!("Implement TcpHeader::new()")
+        Self {
+            source_port: src_port.to_be(),
+            destination_port: dst_port.to_be(),
+            sequence_number: seq.to_be(),
+            acknowledgment_number: ack.to_be(),
+            // data offset は 5
+            data_offset_and_flags: ((5u16 << 12) | (flags as u16)).to_be(),
+            window_size: window.to_be(),
+            urgent_pointer: 0,
+            checksum: 0,
+        }
     }
 
     /// Convert TCP header to byte array
@@ -105,8 +120,8 @@ impl TcpHeader {
 
     /// Extract flags from data_offset_and_flags field
     fn get_flags(&self) -> u8 {
-        // TODO: Extract lower 6 bits as flags
-        (self.data_offset_and_flags & 0x3F) as u8
+        // Extract lower 8 bits as flags
+        (self.data_offset_and_flags & 0xFF) as u8
     }
 
     /// Extract data offset from data_offset_and_flags field
