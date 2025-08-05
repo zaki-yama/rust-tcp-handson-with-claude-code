@@ -80,12 +80,16 @@ impl TcpHeader {
 
     /// Convert TCP header to byte array
     fn to_bytes(&self) -> Vec<u8> {
-        // TODO: Task B3 - Implement to_bytes conversion
-        // Hints:
-        // - Create Vec with capacity 20
-        // - Use to_be_bytes() for multi-byte fields
-        // - Follow the same pattern as Step1's IpHeader::to_bytes()
-        todo!("Implement TcpHeader::to_bytes()")
+        let mut bytes = Vec::with_capacity(20);
+        bytes.extend_from_slice(&self.source_port.to_ne_bytes());
+        bytes.extend_from_slice(&self.destination_port.to_ne_bytes());
+        bytes.extend_from_slice(&self.sequence_number.to_ne_bytes());
+        bytes.extend_from_slice(&self.acknowledgment_number.to_ne_bytes());
+        bytes.extend_from_slice(&self.data_offset_and_flags.to_ne_bytes());
+        bytes.extend_from_slice(&self.window_size.to_ne_bytes());
+        bytes.extend_from_slice(&self.checksum.to_ne_bytes());
+        bytes.extend_from_slice(&self.urgent_pointer.to_ne_bytes());
+        bytes
     }
 
     /// Parse TCP header from byte array
@@ -121,13 +125,12 @@ impl TcpHeader {
     /// Extract flags from data_offset_and_flags field
     fn get_flags(&self) -> u8 {
         // Extract lower 8 bits as flags
-        (self.data_offset_and_flags & 0xFF) as u8
+        (u16::from_be(self.data_offset_and_flags) & 0xFF) as u8
     }
 
     /// Extract data offset from data_offset_and_flags field
     fn get_data_offset(&self) -> u8 {
-        // TODO: Extract upper 4 bits as data offset
-        ((self.data_offset_and_flags >> 12) & 0x0F) as u8
+        ((u16::from_be(self.data_offset_and_flags) >> 12) & 0x0F) as u8
     }
 }
 
