@@ -17,7 +17,7 @@ TCPヘッダーの構造を完全に理解し、パース・生成・検証機�
 - [x] **Task B4**: 基本的なテストでヘッダー作成を確認
 
 ### Phase C: パース機能の実装 (45分)
-- [ ] **Task C1**: バイト配列からのパース`parse()`メソッドを実装
+- [ ] **Task C1**: バイト配列からのパース`from_bytes()`メソッドを実装
 - [ ] **Task C2**: エンディアン変換処理を正しく実装
 - [ ] **Task C3**: パース結果の検証テストを作成
 - [ ] **Task C4**: 既知のTCPパケットでパーステストを実行
@@ -154,11 +154,11 @@ fn test_tcp_header_creation() {
 ### Phase C: パース機能の実装
 
 #### Task C1: パース実装
-**何をする**: `parse()`メソッドでバイト配列からヘッダー作成
+**何をする**: `from_bytes()`メソッドでバイト配列からヘッダー作成
 **実装内容**:
 ```rust
 impl TcpHeader {
-    fn parse(data: &[u8]) -> Result<Self, &'static str> {
+    fn from_bytes(data: &[u8]) -> Result<Self, &'static str> {
         if data.len() < 20 {
             return Err("Data too short for TCP header");
         }
@@ -185,7 +185,7 @@ fn test_parse_known_packet() {
         0x00, 0x00, 0x03, 0xe8,  // seq=1000
         // ... 残りのバイト
     ];
-    let header = TcpHeader::parse(&tcp_bytes).unwrap();
+    let header = TcpHeader::from_bytes(&tcp_bytes).unwrap();
     assert_eq!(header.source_port, 80);
     assert_eq!(header.destination_port, 12345);
 }
@@ -291,7 +291,7 @@ impl TcpHeader {
         // Task B3で実装
     }
     
-    fn parse(data: &[u8]) -> Result<Self, &'static str> {
+    fn from_bytes(data: &[u8]) -> Result<Self, &'static str> {
         // Task C1で実装
     }
 }
@@ -305,7 +305,7 @@ fn main() {
     println!("TCP Header bytes: {:?}", bytes);
     
     // パーステスト
-    if let Ok(parsed) = TcpHeader::parse(&bytes) {
+    if let Ok(parsed) = TcpHeader::from_bytes(&bytes) {
         println!("Parse successful!");
     }
 }

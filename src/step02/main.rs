@@ -66,13 +66,13 @@ impl TcpHeader {
     /// * `window` - Window size
     fn new(src_port: u16, dst_port: u16, seq: u32, ack: u32, flags: u8, window: u16) -> Self {
         Self {
-            source_port: src_port.to_be(),
-            destination_port: dst_port.to_be(),
-            sequence_number: seq.to_be(),
-            acknowledgment_number: ack.to_be(),
+            source_port: src_port,
+            destination_port: dst_port,
+            sequence_number: seq,
+            acknowledgment_number: ack,
             // data offset は 5
-            data_offset_and_flags: ((5u16 << 12) | (flags as u16)).to_be(),
-            window_size: window.to_be(),
+            data_offset_and_flags: (5u16 << 12) | (flags as u16),
+            window_size: window,
             urgent_pointer: 0,
             checksum: 0,
         }
@@ -81,25 +81,33 @@ impl TcpHeader {
     /// Convert TCP header to byte array
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(20);
-        bytes.extend_from_slice(&self.source_port.to_ne_bytes());
-        bytes.extend_from_slice(&self.destination_port.to_ne_bytes());
-        bytes.extend_from_slice(&self.sequence_number.to_ne_bytes());
-        bytes.extend_from_slice(&self.acknowledgment_number.to_ne_bytes());
-        bytes.extend_from_slice(&self.data_offset_and_flags.to_ne_bytes());
-        bytes.extend_from_slice(&self.window_size.to_ne_bytes());
-        bytes.extend_from_slice(&self.checksum.to_ne_bytes());
-        bytes.extend_from_slice(&self.urgent_pointer.to_ne_bytes());
+        bytes.extend_from_slice(&self.source_port.to_be_bytes());
+        bytes.extend_from_slice(&self.destination_port.to_be_bytes());
+        bytes.extend_from_slice(&self.sequence_number.to_be_bytes());
+        bytes.extend_from_slice(&self.acknowledgment_number.to_be_bytes());
+        bytes.extend_from_slice(&self.data_offset_and_flags.to_be_bytes());
+        bytes.extend_from_slice(&self.window_size.to_be_bytes());
+        bytes.extend_from_slice(&self.checksum.to_be_bytes());
+        bytes.extend_from_slice(&self.urgent_pointer.to_be_bytes());
         bytes
     }
 
     /// Parse TCP header from byte array
-    fn parse(data: &[u8]) -> Result<Self, &'static str> {
-        // TODO: Task C1 - Implement parsing
-        // Hints:
-        // - Check data length >= 20 bytes
-        // - Use u16::from_be_bytes() and u32::from_be_bytes()
-        // - Extract bytes in correct order
-        todo!("Implement TcpHeader::parse()")
+    fn from_bytes(data: &[u8]) -> Result<Self, &'static str> {
+        if data.len() < TCP_HEADER_SIZE {
+            return Err("Data too short for TCP header");
+        }
+
+        Ok(Self {
+            source_port: u16::from_be_bytes([data[0], data[1]]),
+            destination_port: u16::from_be_bytes([data[2], data[3]]),
+            sequence_number: u32::from_be_bytes([data[4], data[5], data[6], data[7]]),
+            acknowledgment_number: u32::from_be_bytes([data[8], data[9], data[10], data[11]]),
+            data_offset_and_flags: u16::from_be_bytes([data[12], data[13]]),
+            window_size: u16::from_be_bytes([data[14], data[15]]),
+            checksum: u16::from_be_bytes([data[16], data[17]]),
+            urgent_pointer: u16::from_be_bytes([data[18], data[19]]),
+        })
     }
 
     /// Calculate TCP checksum with pseudo header
@@ -125,12 +133,12 @@ impl TcpHeader {
     /// Extract flags from data_offset_and_flags field
     fn get_flags(&self) -> u8 {
         // Extract lower 8 bits as flags
-        (u16::from_be(self.data_offset_and_flags) & 0xFF) as u8
+        (self.data_offset_and_flags & 0xFF) as u8
     }
 
     /// Extract data offset from data_offset_and_flags field
     fn get_data_offset(&self) -> u8 {
-        ((u16::from_be(self.data_offset_and_flags) >> 12) & 0x0F) as u8
+        ((self.data_offset_and_flags >> 12) & 0x0F) as u8
     }
 }
 
@@ -165,7 +173,7 @@ fn main() {
     println!("TCP Header bytes ({} bytes): {:02X?}", bytes.len(), bytes);
 
     println!("\n3. Parsing from bytes...");
-    match TcpHeader::parse(&bytes) {
+    match TcpHeader::from_bytes(&bytes) {
         Ok(parsed) => {
             println!("Parse successful: {:?}", parsed);
             println!("Source port: {}", u16::from_be(parsed.source_port));
