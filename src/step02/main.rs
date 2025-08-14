@@ -143,18 +143,23 @@ impl TcpHeader {
 }
 
 /// Create TCP pseudo header for checksum calculation
+/// +--------+--------+--------+--------+
+/// |           Source Address          |
+/// +--------+--------+--------+--------+
+/// |         Destination Address       |
+/// +--------+--------+--------+--------+
+/// |  zero  |  PTCL  |    TCP Length   |
+/// +--------+--------+--------+--------+
+/// PTCL = 6 (TCP protocol number)
 fn create_pseudo_header(src_ip: u32, dst_ip: u32, tcp_length: u16) -> Vec<u8> {
-    // TODO: Task D2 - Implement pseudo header creation
     // Pseudo header format (12 bytes):
-    // +--------+--------+--------+--------+
-    // |           Source Address          |
-    // +--------+--------+--------+--------+
-    // |         Destination Address       |
-    // +--------+--------+--------+--------+
-    // |  zero  |  PTCL  |    TCP Length   |
-    // +--------+--------+--------+--------+
-    // PTCL = 6 (TCP protocol number)
-    todo!("Implement pseudo header creation")
+    let mut bytes = Vec::with_capacity(12);
+    bytes.extend_from_slice(&src_ip.to_be_bytes());
+    bytes.extend_from_slice(&dst_ip.to_be_bytes());
+    bytes.push(0);
+    bytes.push(6); // PTCL
+    bytes.extend_from_slice(&tcp_length.to_be_bytes());
+    bytes
 }
 
 fn main() {

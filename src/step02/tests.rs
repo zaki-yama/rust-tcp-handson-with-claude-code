@@ -213,7 +213,6 @@ mod phase_d_tests {
     use super::*;
 
     #[test]
-    #[ignore] // Phase Dで実装時に有効化
     fn test_pseudo_header_creation() {
         // 192.168.1.1 -> 192.168.1.2, TCP length = 20
         let src_ip = u32::from_be_bytes([192, 168, 1, 1]);
