@@ -95,3 +95,59 @@ C0 A8 01 01  ← 192.168.1.1
 C0 A8 01 64  ← 192.168.1.100  
 00 06 00 14  ← 0 + プロトコル6 + 長さ20
 ```
+
+## チェックサム検証失敗の問題と解決
+
+### 問題の発生
+Phase D実装中に`verify_checksum`メソッドで検証が常に失敗する問題が発生。期待値0xFFFFに対して実際は0x0000が返されていた。
+
+### 原因分析
+#### 初期実装の問題
+```rust
+// 問題のあった初期実装
+fn verify_checksum(&self, src_ip: u32, dst_ip: u32, tcp_data: &[u8]) -> bool {
+    let all_data = self.prepare_checksum_data(src_ip, dst_ip, tcp_data);
+    let result = calculate_checksum_rfc1071(&all_data); // ここで1の補数を取っていた
+    result == 0xFFFF
+}
+```
+
+#### RFC 1071の数学的原理
+- **チェックサム計算時**: データの1の補数和を取り、最後に1の補数演算（`!sum`）を適用
+- **チェックサム検証時**: チェックサム含む全データの1の補数和が**0xFFFF**になるべき
+- **誤解**: 検証時にも1の補数演算を適用してしまうと0x0000になってしまう
+
+### 解決方法
+#### 1. 関数の分離
+```rust
+/// 1の補数和を計算（キャリー処理まで、補数演算なし）
+fn calculate_1s_complement_sum(data: &[u8]) -> u16 {
+    // 16ビット単位の加算とキャリー処理のみ
+}
+
+/// RFC 1071チェックサム計算（1の補数演算を含む）
+fn calculate_checksum_rfc1071(data: &[u8]) -> u16 {
+    let sum = calculate_1s_complement_sum(data);
+    !sum // 1の補数を取る
+}
+```
+
+#### 2. 正しい検証実装
+```rust
+fn verify_checksum(&self, src_ip: u32, dst_ip: u32, tcp_data: &[u8]) -> bool {
+    let all_data = self.prepare_checksum_data(src_ip, dst_ip, tcp_data);
+    let result = calculate_1s_complement_sum(&all_data); // 1の補数演算なし
+    result == 0xFFFF // 正しければ0xFFFF
+}
+```
+
+### 学んだポイント
+1. **RFC 1071の数学的性質**: 正しいチェックサム + 元データの1の補数和 = 0xFFFF
+2. **計算と検証の違い**: 計算時は1の補数適用、検証時は適用せずに0xFFFFチェック  
+3. **共通ロジックの抽出**: `calculate_1s_complement_sum`で基本処理を共通化
+4. **デバッグの重要性**: 中間値ログ出力で問題箇所を特定
+
+### 解決後の成果
+- すべてのチェックサムテストが成功
+- RFC 1071完全準拠の実装完成
+- 計算・検証の両方で正確な動作を確認
