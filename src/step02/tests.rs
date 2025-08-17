@@ -109,7 +109,6 @@ mod phase_b_tests {
     // Task B4: Round-trip Test (作成 → バイト変換 → パース)
     // これはPhase Cのfrom_bytes()実装後に動作するが、ゴールイメージとして定義
     #[test]
-    #[ignore] // Phase Cまで無視
     fn test_tcp_header_round_trip() {
         let original = TcpHeader::new(443, 8080, 12345, 67890, tcp_flags::ACK, 16384);
         let bytes = original.to_bytes();
@@ -165,13 +164,24 @@ mod phase_c_tests {
         let header =
             TcpHeader::from_bytes(&tcp_bytes).expect("Should convert from bytes successfully");
 
+        // 全フィールドの正確性を検証（packed構造体対応）
         let source_port = header.source_port;
+        let destination_port = header.destination_port;
+        let sequence_number = header.sequence_number;
+        let acknowledgment_number = header.acknowledgment_number;
+        let window_size = header.window_size;
+        let checksum = header.checksum;
+        let urgent_pointer = header.urgent_pointer;
+
         assert_eq!(source_port, 80);
-        // assert_eq!(header.destination_port, 12345_u16.to_be());
-        // assert_eq!(header.sequence_number, 1000_u32.to_be());
-        // assert_eq!(header.acknowledgment_number, 2000_u32.to_be());
-        // assert_eq!(header.get_flags(), tcp_flags::SYN);
-        // assert_eq!(header.window_size, 8192_u16.to_be());
+        assert_eq!(destination_port, 12345);
+        assert_eq!(sequence_number, 1000);
+        assert_eq!(acknowledgment_number, 2000);
+        assert_eq!(header.get_flags(), tcp_flags::SYN);
+        assert_eq!(window_size, 8192);
+        assert_eq!(checksum, 0);
+        assert_eq!(urgent_pointer, 0);
+        assert_eq!(header.get_data_offset(), 5); // 20バイト ÷ 4
     }
 
     #[test]
@@ -366,7 +376,6 @@ mod integration_tests {
     use super::*;
 
     #[test]
-    #[ignore] // 全Phase完了後に有効化
     fn test_complete_tcp_header_workflow() {
         let src_ip = u32::from_be_bytes([192, 168, 1, 100]);
         let dst_ip = u32::from_be_bytes([192, 168, 1, 200]);
@@ -404,55 +413,6 @@ mod integration_tests {
         assert_eq!(original_source_port, parsed_source_port);
         assert_eq!(original_destination_port, parsed_destination_port);
         assert_eq!(original.get_flags(), parsed.get_flags());
-    }
-
-    #[test]
-    #[ignore] // 全Phase完了後に有効化
-    fn test_known_tcp_packet() {
-        // Wiresharkでキャプチャした実際のTCPパケットでテスト
-        // (実際の使用時は本物のパケットデータを使用)
-        let real_tcp_packet = [
-            // 実際のTCPパケットのバイト配列をここに配置
-            0x04, 0xd2, 0x00, 0x50, // sport=1234, dport=80
-            0x12, 0x34, 0x56, 0x78, // seq
-            0x9a, 0xbc, 0xde, 0xf0, // ack
-            0x50, 0x18, 0x01, 0x00, // offset+flags, window
-            0xa1, 0xb2, 0x00, 0x00, // checksum, urgent
-        ];
-
-        match TcpHeader::from_bytes(&real_tcp_packet) {
-            Ok(header) => {
-                println!(
-                    "Real packet converted from bytes successfully: {:?}",
-                    header
-                );
-                // 実際のパケットの値と照合
-            }
-            Err(e) => {
-                println!("Failed to convert real packet from bytes: {}", e);
-            }
-        }
-    }
-}
-
-// =============================================================================
-// Test Utilities
-// =============================================================================
-
-#[cfg(test)]
-mod test_utils {
-    use super::*;
-
-    /// テスト用のサンプルTCPヘッダー作成
-    pub fn create_sample_header() -> TcpHeader {
-        TcpHeader::new(80, 12345, 1000, 2000, tcp_flags::SYN, 8192)
-    }
-
-    /// テスト用のサンプルIPアドレス
-    pub fn sample_ip_pair() -> (u32, u32) {
-        let src = u32::from_be_bytes([192, 168, 1, 1]);
-        let dst = u32::from_be_bytes([192, 168, 1, 2]);
-        (src, dst)
     }
 }
 
