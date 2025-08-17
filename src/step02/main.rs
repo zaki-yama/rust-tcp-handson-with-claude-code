@@ -110,24 +110,32 @@ impl TcpHeader {
         })
     }
 
+    /// 内部ヘルパー: チェックサム計算用の全データを準備
+    fn prepare_checksum_data(&self, src_ip: u32, dst_ip: u32, tcp_data: &[u8]) -> Vec<u8> {
+        let pseudo_header =
+            create_pseudo_header(src_ip, dst_ip, (TCP_HEADER_SIZE + tcp_data.len()) as u16);
+        let tcp_header_bytes = self.to_bytes();
+
+        let mut all_data = Vec::new();
+        all_data.extend_from_slice(&pseudo_header);
+        all_data.extend_from_slice(&tcp_header_bytes);
+        all_data.extend_from_slice(tcp_data);
+        all_data
+    }
+
     /// Calculate TCP checksum with pseudo header
     fn calculate_checksum(&mut self, src_ip: u32, dst_ip: u32, tcp_data: &[u8]) {
-        // TODO: Task D3 - Implement checksum calculation
-        // Hints:
-        // - Create pseudo header (12 bytes)
-        // - Set checksum field to 0 before calculation
-        // - Use RFC 1071 algorithm (same as Step1)
-        // - Include pseudo header + TCP header + data
-        todo!("Implement checksum calculation")
+        self.checksum = 0; // 先にクリア
+        let all_data = self.prepare_checksum_data(src_ip, dst_ip, tcp_data);
+        self.checksum = calculate_checksum_rfc1071(&all_data);
     }
 
     /// Verify TCP checksum
     fn verify_checksum(&self, src_ip: u32, dst_ip: u32, tcp_data: &[u8]) -> bool {
-        // TODO: Task D4 - Implement checksum verification
-        // Hints:
-        // - Calculate checksum including existing checksum field
-        // - Result should be 0xFFFF if valid
-        todo!("Implement checksum verification")
+        // checksumはそのまま（クリアしない）
+        let all_data = self.prepare_checksum_data(src_ip, dst_ip, tcp_data);
+        let result = calculate_1s_complement_sum(&all_data);
+        result == 0xFFFF // 正しければ0xFFFF
     }
 
     /// Extract flags from data_offset_and_flags field
@@ -140,6 +148,36 @@ impl TcpHeader {
     fn get_data_offset(&self) -> u8 {
         ((self.data_offset_and_flags >> 12) & 0x0F) as u8
     }
+}
+
+/// 1の補数和を計算（キャリー処理まで、補数演算なし）
+fn calculate_1s_complement_sum(data: &[u8]) -> u16 {
+    let mut sum = 0u32; // オーバーフローを避けるため32ビット
+
+    // 16ビットずつ処理
+    for chunk in data.chunks(2) {
+        let word = if chunk.len() == 2 {
+            // 2バイトある場合：ビッグエンディアンで16ビット値を作成
+            ((chunk[0] as u16) << 8) | (chunk[1] as u16)
+        } else {
+            // 1バイトしかない場合（奇数長）：上位バイトに配置
+            (chunk[0] as u16) << 8
+        };
+        sum += word as u32;
+    }
+
+    // キャリーを処理
+    while (sum >> 16) != 0 {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+
+    sum as u16
+}
+
+/// RFC 1071チェックサム計算（1の補数演算を含む）
+fn calculate_checksum_rfc1071(data: &[u8]) -> u16 {
+    let sum = calculate_1s_complement_sum(data);
+    !sum // 1の補数を取る
 }
 
 /// Create TCP pseudo header for checksum calculation

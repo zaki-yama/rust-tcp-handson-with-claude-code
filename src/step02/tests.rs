@@ -213,6 +213,31 @@ mod phase_d_tests {
     use super::*;
 
     #[test]
+    fn test_rfc1071_algorithm_simple() {
+        // RFC 1071の例: [0x45, 0x00, 0x00, 0x3c] のチェックサム
+        let data = [0x45, 0x00, 0x00, 0x3c];
+        let result = calculate_checksum_rfc1071(&data);
+
+        // 手動計算: 0x4500 + 0x003c = 0x453c
+        // 1の補数: !0x453c = 0xbac3
+        let expected = 0xbac3;
+        assert_eq!(result, expected, "RFC 1071 algorithm test failed");
+    }
+
+    #[test]
+    fn test_rfc1071_algorithm_with_carry() {
+        // キャリーが発生するケース
+        let data = [0xFF, 0xFF, 0x00, 0x01];
+        let result = calculate_checksum_rfc1071(&data);
+
+        // 手動計算: 0xFFFF + 0x0001 = 0x10000
+        // キャリー処理: (0x10000 & 0xFFFF) + (0x10000 >> 16) = 0x0000 + 0x0001 = 0x0001
+        // 1の補数: !0x0001 = 0xFFFE
+        let expected = 0xFFFE;
+        assert_eq!(result, expected, "RFC 1071 carry test failed");
+    }
+
+    #[test]
     fn test_pseudo_header_creation() {
         // 192.168.1.1 -> 192.168.1.2, TCP length = 20
         let src_ip = u32::from_be_bytes([192, 168, 1, 1]);
@@ -235,7 +260,6 @@ mod phase_d_tests {
     }
 
     #[test]
-    #[ignore] // Phase Dで実装時に有効化
     fn test_checksum_calculation() {
         let src_ip = u32::from_be_bytes([10, 0, 0, 1]);
         let dst_ip = u32::from_be_bytes([10, 0, 0, 2]);
@@ -243,18 +267,78 @@ mod phase_d_tests {
         let mut header = TcpHeader::new(80, 8080, 1000, 2000, tcp_flags::SYN, 1024);
         let tcp_data = b""; // データなし
 
+        let before_checksum = header.checksum;
+        println!("Before checksum: 0x{:04X}", before_checksum);
+
+        // チェックサム計算時のデータを記録
+        let calc_data = header.prepare_checksum_data(src_ip, dst_ip, tcp_data);
+        println!(
+            "Calculation data: {:02X?}",
+            &calc_data[0..std::cmp::min(calc_data.len(), 32)]
+        );
+
+        // 手計算で検証
+        let mut manual_sum = 0u32;
+        for chunk in calc_data.chunks(2) {
+            let word = if chunk.len() == 2 {
+                ((chunk[0] as u16) << 8) | (chunk[1] as u16)
+            } else {
+                (chunk[0] as u16) << 8
+            };
+            manual_sum += word as u32;
+            println!("Adding 0x{:04X}, sum = 0x{:08X}", word, manual_sum);
+        }
+
+        // キャリー処理
+        while (manual_sum >> 16) != 0 {
+            manual_sum = (manual_sum & 0xFFFF) + (manual_sum >> 16);
+            println!("Carry processing: sum = 0x{:08X}", manual_sum);
+        }
+
+        let manual_checksum = !manual_sum as u16;
+        println!("Manual calculated checksum: 0x{:04X}", manual_checksum);
+
         header.calculate_checksum(src_ip, dst_ip, tcp_data);
+        let after_checksum = header.checksum;
+        println!("After checksum: 0x{:04X}", after_checksum);
 
         // チェックサムが計算されて0以外になっているかチェック
         let checksum = header.checksum;
         assert_ne!(checksum, 0);
+
+        // 検証テストのデバッグ
+        let verification_result = header.verify_checksum(src_ip, dst_ip, tcp_data);
+        println!("Verification result: {}", verification_result);
+
+        // 手動で検証計算を確認
+        let all_data = header.prepare_checksum_data(src_ip, dst_ip, tcp_data);
+        let manual_result = calculate_checksum_rfc1071(&all_data);
+        println!(
+            "Manual verification: 0x{:04X} (should be 0xFFFF)",
+            manual_result
+        );
+
+        // 詳細デバッグ: データ内容を確認
+        println!("All data length: {}", all_data.len());
+        println!(
+            "All data (hex): {:02X?}",
+            &all_data[0..std::cmp::min(all_data.len(), 32)]
+        );
+
+        // 疑似ヘッダー部分を確認
+        let pseudo_header =
+            create_pseudo_header(src_ip, dst_ip, (TCP_HEADER_SIZE + tcp_data.len()) as u16);
+        println!("Pseudo header: {:02X?}", pseudo_header);
+
+        // TCPヘッダー部分を確認
+        let tcp_header_bytes = header.to_bytes();
+        println!("TCP header: {:02X?}", tcp_header_bytes);
 
         // 検証テスト
         assert!(header.verify_checksum(src_ip, dst_ip, tcp_data));
     }
 
     #[test]
-    #[ignore] // Phase Dで実装時に有効化
     fn test_checksum_with_data() {
         let src_ip = u32::from_be_bytes([127, 0, 0, 1]);
         let dst_ip = u32::from_be_bytes([127, 0, 0, 1]);
