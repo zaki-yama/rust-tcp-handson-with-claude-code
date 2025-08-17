@@ -174,6 +174,55 @@ impl IpHeader {
     fn dest_ip(&self) -> Ipv4Addr {
         Ipv4Addr::from(self.destination)
     }
+
+    /*
+    /// NOTE: チェックサムはカーネルが計算するため不要になった
+    /// RFC 1071のチェックサム計算（共通ロジック）
+    fn compute_checksum_sum(&self) -> u32 {
+        let mut sum: u32 = 0;
+
+        // IPヘッダーをバイト配列として取得
+        let header_bytes = unsafe {
+            std::slice::from_raw_parts(
+                self as *const _ as *const u8,
+                std::mem::size_of::<IpHeader>(),
+            )
+        };
+
+        // 16bit（2バイト）単位で加算
+        for i in (0..IP_HEADER_SIZE).step_by(2) {
+            // 2バイトを16bit値として結合（ビッグエンディアン）
+            let word = ((header_bytes[i] as u16) << 8) + header_bytes[i + 1] as u16;
+            sum += word as u32;
+        }
+
+        // キャリーを下位16bitに加算（1の補数演算）
+        while (sum >> 16) > 0 {
+            sum = (sum & 0xFFFF) + (sum >> 16);
+        }
+
+        sum
+    }
+
+    /// RFC 1071のチェックサムアルゴリズム実装
+    fn calculate_checksum(&mut self) {
+        self.checksum = 0;
+        let sum = self.compute_checksum_sum();
+
+        // 全ビット反転（1の補数）
+        let checksum = !(sum as u16);
+
+        // ネットワークバイトオーダーで設定
+        self.checksum = checksum.to_be();
+    }
+
+    /// チェックサム検証
+    fn verify_checksum(&self) -> bool {
+        let sum = self.compute_checksum_sum();
+        // RFC 1071: 検証時は結果が0xFFFFになるべき
+        sum as u16 == 0xFFFF
+    }
+    */
 }
 
 fn send_packet(
