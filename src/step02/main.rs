@@ -27,7 +27,7 @@ const TCP_HEADER_SIZE: usize = 20;
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
-struct TcpHeader {
+pub struct TcpHeader {
     source_port: u16,
     destination_port: u16,
     // シーケンス番号。初期値はコネクション確立時に乱数で決定される
@@ -43,7 +43,7 @@ struct TcpHeader {
 
 /// TCP Flags (RFC 9293 Section 3.1)
 #[allow(dead_code)]
-mod tcp_flags {
+pub mod tcp_flags {
     pub const FIN: u8 = 0x01; // No more data from sender
     pub const SYN: u8 = 0x02; // Synchronize sequence numbers
     pub const RST: u8 = 0x04; // Reset the connection
@@ -175,7 +175,7 @@ fn calculate_1s_complement_sum(data: &[u8]) -> u16 {
 }
 
 /// RFC 1071チェックサム計算（1の補数演算を含む）
-fn calculate_checksum_rfc1071(data: &[u8]) -> u16 {
+pub fn calculate_checksum_rfc1071(data: &[u8]) -> u16 {
     let sum = calculate_1s_complement_sum(data);
     !sum // 1の補数を取る
 }

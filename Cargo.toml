@@ -3,6 +3,10 @@ name = "rust-tcp-handson-with-claude-code"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "rust_tcp_handson_with_claude_code"
+path = "src/lib.rs"
+
 [dependencies]
 libc = "0.2"
 log = "0.4"

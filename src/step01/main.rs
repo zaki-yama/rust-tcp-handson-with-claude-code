@@ -6,7 +6,7 @@ use std::{error::Error, net::Ipv4Addr};
 const IP_HEADER_SIZE: usize = 20;
 
 // ローカルIPアドレスを取得する関数
-fn get_local_ip() -> Option<Ipv4Addr> {
+pub fn get_local_ip() -> Option<Ipv4Addr> {
     use std::net::UdpSocket;
 
     // 外部のDNSサーバー（Google DNS）に接続を試行して、ローカルIPを取得
@@ -23,7 +23,7 @@ fn get_local_ip() -> Option<Ipv4Addr> {
 }
 
 #[repr(C, packed)]
-struct IpHeader {
+pub struct IpHeader {
     // 1バイト目：Version(4bit) + IHL(4bit)
     version_ihl: u8,
     // 2バイト目：Type of Service
@@ -46,7 +46,7 @@ struct IpHeader {
     destination: u32,
 }
 
-fn create_raw_socket() -> Result<i32, Box<dyn Error>> {
+pub fn create_raw_socket() -> Result<i32, Box<dyn Error>> {
     // 1. libc::socket(AF_INET, SOCK_RAW, IPPROTO_TCP)でソケット作成
     let socket_fd = unsafe { libc::socket(AF_INET, SOCK_RAW, IPPROTO_TCP) };
 

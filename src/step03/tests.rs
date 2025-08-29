@@ -51,8 +51,6 @@ mod phase_b_tests {
     // Task B1: TcpConnection構造体テスト
     #[test]
     fn test_tcp_connection_new() {
-        // TcpConnection::new実装後にテストを有効化
-        /*
         let remote_ip = u32::from_be_bytes([192, 168, 1, 100]);
         let remote_port = 8080;
 
@@ -64,7 +62,6 @@ mod phase_b_tests {
         assert_eq!(conn.remote_port, remote_port);
         assert!(conn.socket_fd > 0); // 有効なソケットファイルディスクリプタ
         assert!(conn.local_port > 0); // 動的に割り当てられたポート
-        */
     }
 
     // Task B2: ISN生成テスト

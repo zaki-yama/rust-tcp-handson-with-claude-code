@@ -5,15 +5,15 @@ TCP接続確立の基本プロセス（3-way handshake）を実装し、実際�
 
 ## 📋 実装タスク一覧（推奨順序）
 
-### Phase A: 3-way handshakeの理解と設計 (45分)
-- [ ] **Task A1**: RFC 9293 Section 3.4を読んで3-way handshakeプロセスを理解
-- [ ] **Task A2**: シーケンス番号とACK番号の計算ルールを整理  
-- [ ] **Task A3**: 基本的な接続状態（CLOSED, SYN-SENT, ESTABLISHED）を定義
-- [ ] **Task A4**: プロジェクト構成を作成（main.rs, tests.rs, LEARNING_LOG.md）
+### Phase A: 3-way handshakeの理解と設計 (45分) ✅ 完了
+- [x] **Task A1**: RFC 9293 Section 3.5を読んで3-way handshakeプロセスを理解
+- [x] **Task A2**: シーケンス番号とACK番号の計算ルールを整理  
+- [x] **Task A3**: 基本的な接続状態（CLOSED, SYN-SENT, ESTABLISHED）を定義
+- [x] **Task A4**: プロジェクト構成を作成（main.rs, tests.rs, LEARNING_LOG.md）
 
-### Phase B: 基本構造の実装 (60分)
-- [ ] **Task B1**: `TcpConnection`構造体を定義（状態管理用）
-- [ ] **Task B2**: 初期シーケンス番号（ISN）生成機能を実装
+### Phase B: 基本構造の実装 (60分) 🔄 進行中
+- [x] **Task B1**: `TcpConnection`構造体を定義（状態管理用）
+- [x] **Task B2**: 初期シーケンス番号（ISN）生成機能を実装
 - [ ] **Task B3**: Step2の`TcpHeader`を再利用できるよう調整
 - [ ] **Task B4**: 基本的なパケット送信インフラを構築
 
@@ -48,7 +48,7 @@ TCP接続確立の基本プロセス（3-way handshake）を実装し、実際�
 ### Phase A: 3-way handshakeの理解と設計
 
 #### Task A1: RFC理解
-**何をする**: RFC 9293 Section 3.4の3-way handshake仕様を読む
+**何をする**: RFC 9293 Section 3.5の3-way handshake仕様を読む
 
 **3-way handshakeの流れ**:
 ```
@@ -568,7 +568,7 @@ Step3完了の条件：
 ## 🔗 参考資料
 
 ### RFC関連
-- **RFC 9293 Section 3.4**: Establishing a connection（必読）
+- **RFC 9293 Section 3.5**: Establishing a connection（必読）
 - **RFC 9293 Section 3.8.1**: Connection establishment example
 - **RFC 6528**: Defending Against Sequence Number Attacks（ISN生成）
 

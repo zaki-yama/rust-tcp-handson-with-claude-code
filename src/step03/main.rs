@@ -1,9 +1,9 @@
 use std::net::Ipv4Addr;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-// Step2からTcpHeaderを再利用する必要があります
-// プロジェクト構成に応じて適切にimportしてください
-// use crate::step02::{TcpHeader, calculate_checksum_rfc1071};
+// Step01とStep02の実装を共通ライブラリから使用
+use rust_tcp_handson_with_claude_code::step01::{create_raw_socket, get_local_ip, IpHeader};
+use rust_tcp_handson_with_claude_code::step02::{calculate_checksum_rfc1071, tcp_flags, TcpHeader};
 
 // Raw socketの基本機能（Step1から再利用）
 // 実装時にStep1のコードを参考にしてください
@@ -28,11 +28,20 @@ pub struct TcpConnection {
 
 impl TcpConnection {
     fn new(remote_ip: u32, remote_port: u16) -> Result<Self, Box<dyn std::error::Error>> {
-        // Task B1: TcpConnection構造体の実装
         // - Raw socket作成
-        // - 初期状態設定
-        // - ローカルポート選択（動的割り当て）
-        todo!("Task B1: TcpConnection::new() を実装してください")
+        let socket_fd = create_raw_socket()?;
+
+        let local_port = Self::choose_local_port();
+
+        Ok(Self {
+            socket_fd,
+            state: TcpState::Closed,
+            local_seq: 0,
+            remote_seq: 0,
+            local_port,
+            remote_ip,
+            remote_port,
+        })
     }
 
     fn connect(&mut self, timeout_secs: u64) -> Result<(), Box<dyn std::error::Error>> {
@@ -111,10 +120,30 @@ impl TcpConnection {
         // Task E4: 接続確認
         self.state == TcpState::Established
     }
+
+    /// 動的にローカルポートを選択
+    fn choose_local_port() -> u16 {
+        use std::net::TcpListener;
+
+        // ポート0を指定することでOSが自動的に利用可能なポートを選択
+        if let Ok(listener) = TcpListener::bind("127.0.0.1:0") {
+            if let Ok(addr) = listener.local_addr() {
+                return addr.port();
+            }
+        }
+
+        // フォールバック: 49152-65535の範囲からランダム選択
+        49152
+            + (SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as u16
+                % (65535 - 49152))
+    }
 }
 
+/// ISN: The Initial Sequence Number
 fn generate_isn() -> u32 {
-    // Task B2: ISN生成
     // RFC 6528推奨の安全な初期シーケンス番号生成
     // 簡易実装: 現在時刻 + ランダム値
     let now = SystemTime::now()
