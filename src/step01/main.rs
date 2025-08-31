@@ -40,9 +40,9 @@ pub struct IpHeader {
     protocol: u8,
     // 11-12バイト目：Header Checksum（カーネルが計算するため0）
     checksum: u16,
-    // 13-16バイト目：送信元IPアドレス（ネットワークバイトオーダー）
+    // 13-16バイト目：送信元IPアドレス（ホストバイトオーダー）
     source: u32,
-    // 17-20バイト目：宛先IPアドレス（ネットワークバイトオーダー）
+    // 17-20バイト目：宛先IPアドレス（ホストバイトオーダー）
     destination: u32,
 }
 
@@ -79,7 +79,7 @@ impl IpHeader {
     /// macOS raw socket用のIPヘッダー作成
     ///
     /// カーネルが処理するフィールド（id, checksum）は0に設定
-    fn new(source: Ipv4Addr, dest: Ipv4Addr, data_len: u16) -> Self {
+    pub fn new(source: Ipv4Addr, dest: Ipv4Addr, data_len: u16) -> Self {
         let total_length = IP_HEADER_SIZE as u16 + data_len;
 
         Self {
@@ -102,7 +102,7 @@ impl IpHeader {
     /// - length/flags_fragment: ホストバイトオーダー（カーネルが変換）
     /// - id/checksum: 0（カーネルが設定/計算）
     /// - IPアドレス: ネットワークバイトオーダー
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(20);
         bytes.push(self.version_ihl);
         bytes.push(self.tos);
@@ -225,7 +225,7 @@ impl IpHeader {
     */
 }
 
-fn send_packet(
+pub fn send_packet(
     socket_fd: i32,
     source: Ipv4Addr,
     dest: Ipv4Addr,

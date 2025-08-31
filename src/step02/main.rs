@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 
-const TCP_HEADER_SIZE: usize = 20;
+pub const TCP_HEADER_SIZE: usize = 20;
 
 /// TCP Header Structure (RFC 9293 Section 3.1 - 2022 updated standard)
 ///
@@ -79,7 +79,7 @@ impl TcpHeader {
     }
 
     /// Convert TCP header to byte array
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(20);
         bytes.extend_from_slice(&self.source_port.to_be_bytes());
         bytes.extend_from_slice(&self.destination_port.to_be_bytes());

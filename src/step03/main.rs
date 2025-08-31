@@ -3,7 +3,9 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 // Step01とStep02の実装を共通ライブラリから使用
 use rust_tcp_handson_with_claude_code::step01::{create_raw_socket, get_local_ip, IpHeader};
-use rust_tcp_handson_with_claude_code::step02::{calculate_checksum_rfc1071, tcp_flags, TcpHeader};
+use rust_tcp_handson_with_claude_code::step02::{
+    calculate_checksum_rfc1071, tcp_flags, TcpHeader, TCP_HEADER_SIZE,
+};
 
 // Raw socketの基本機能（Step1から再利用）
 // 実装時にStep1のコードを参考にしてください
@@ -22,12 +24,12 @@ pub struct TcpConnection {
     local_seq: u32,  // 自分のシーケンス番号
     remote_seq: u32, // 相手のシーケンス番号
     local_port: u16,
-    remote_ip: u32,
+    remote_ip: Ipv4Addr,
     remote_port: u16,
 }
 
 impl TcpConnection {
-    fn new(remote_ip: u32, remote_port: u16) -> Result<Self, Box<dyn std::error::Error>> {
+    fn new(remote_ip: Ipv4Addr, remote_port: u16) -> Result<Self, Box<dyn std::error::Error>> {
         // - Raw socket作成
         let socket_fd = create_raw_socket()?;
 
@@ -52,6 +54,50 @@ impl TcpConnection {
         // 4. 接続完了
         todo!("Task F1: 3-way handshake全体の流れを実装してください")
     }
+
+    fn send_tcp_packet(
+        &self,
+        tcp_header: &TcpHeader,
+        data: &[u8],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let source = get_local_ip().unwrap();
+        let dest = Ipv4Addr::from(self.remote_ip);
+        let data_len = TCP_HEADER_SIZE + data.len();
+
+        let ip_header = IpHeader::new(source, dest, data_len as u16);
+
+        let mut packet = Vec::new();
+        packet.extend_from_slice(&ip_header.to_bytes());
+        packet.extend_from_slice(&tcp_header.to_bytes());
+        packet.extend_from_slice(data);
+
+        let dest_sockaddr = libc::sockaddr_in {
+            sin_len: std::mem::size_of::<libc::sockaddr_in>() as u8,
+            sin_family: libc::AF_INET as u8,
+            sin_port: 0,
+            sin_addr: libc::in_addr {
+                s_addr: u32::from(self.remote_ip), // Ipv4Addr -> u32（ネットワークバイトオーダー）
+            },
+            sin_zero: [0; 8],
+        };
+
+        let result = unsafe {
+            libc::sendto(
+                self.socket_fd,                                      // ソケットFD
+                packet.as_ptr() as *const libc::c_void,              // 送信データ
+                packet.len(),                                        // データサイズ
+                0,                                                   // フラグ
+                &dest_sockaddr as *const _ as *const libc::sockaddr, // 宛先アドレス
+                std::mem::size_of::<libc::sockaddr_in>() as u32,     // アドレス構造体サイズ
+            )
+        };
+        if result < 0 {
+            let errno = unsafe { *libc::__error() };
+            return Err(format!("Failed to send packet: errno {}", errno).into());
+        }
+        Ok(())
+    }
+
 
     fn send_syn(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Task C2: SYN送信機能
@@ -166,7 +212,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // デモ実行例
     println!("Demo: Attempting 3-way handshake with localhost:80");
 
-    let remote_ip = u32::from_be_bytes([127, 0, 0, 1]); // localhost
+    let remote_ip = Ipv4Addr::new(127, 0, 0, 1); // localhost
 
     // 注意: 実際にはlocalhostの80番ポートにHTTPサーバーが動いている必要があります
     // テスト用にnetcatを使用: nc -l 80 （別ターミナルで実行）

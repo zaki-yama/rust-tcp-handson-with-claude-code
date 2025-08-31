@@ -140,7 +140,7 @@ fn generate_isn() -> u32 {
 ```
 
 #### Task B3: TcpHeader再利用
-**何をする**: Step2のTcpHeaderを import して使用
+*何をする**: Step2のTcpHeaderを import して使用
 ```rust
 // Step2のコードを参照可能にする
 use crate::step02::{TcpHeader, calculate_checksum_rfc1071};
