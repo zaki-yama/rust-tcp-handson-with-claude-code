@@ -2,7 +2,9 @@ use std::net::Ipv4Addr;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 // Step01とStep02の実装を共通ライブラリから使用
-use rust_tcp_handson_with_claude_code::step01::{create_raw_socket, get_local_ip, IpHeader};
+use rust_tcp_handson_with_claude_code::step01::{
+    create_raw_socket, get_local_ip, send_packet, IpHeader,
+};
 use rust_tcp_handson_with_claude_code::step02::{
     calculate_checksum_rfc1071, tcp_flags, TcpHeader, TCP_HEADER_SIZE,
 };
@@ -60,18 +62,18 @@ impl TcpConnection {
 
     fn send_tcp_packet(
         &self,
-        tcp_header: &TcpHeader,
+        tcp_header_bytes: &[u8],
         data: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let source = self.local_ip;
         let dest = Ipv4Addr::from(self.remote_ip);
-        let data_len = TCP_HEADER_SIZE + data.len();
+        let data_len = tcp_header_bytes.len() + data.len();
 
         let ip_header = IpHeader::new(source, dest, data_len as u16);
 
         let mut packet = Vec::new();
         packet.extend_from_slice(&ip_header.to_bytes());
-        packet.extend_from_slice(&tcp_header.to_bytes());
+        packet.extend_from_slice(tcp_header_bytes);
         packet.extend_from_slice(data);
 
         let dest_sockaddr = libc::sockaddr_in {
@@ -102,20 +104,21 @@ impl TcpConnection {
     }
 
 
+    /// Task C2: SYN送信機能
     fn send_syn(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Task C2: SYN送信機能
-        // - ISN生成
-        // - SYNパケット作成
-        // - 送信
-        // - 状態変更 (CLOSED -> SYN-SENT)
-        todo!("Task C2: SYN送信機能を実装してください")
+        self.local_seq = generate_isn();
+        let syn_packet = self.create_syn_packet()?;
+        self.send_tcp_packet(&syn_packet, &[])?;
+        self.state = TcpState::SynSent;
+        println!("SYN sent: seq={}", self.local_seq);
+        Ok(())
     }
 
     fn create_syn_packet(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut header = TcpHeader::new(
             self.local_port,
             self.remote_port,
-            self.local_seq, // ISN: generate_isnは使わない？
+            self.local_seq, // ISN
             0,              // ACK番号は0
             tcp_flags::SYN, // SYNフラグ（bit 1）
             8192,           // ウィンドウサイズ

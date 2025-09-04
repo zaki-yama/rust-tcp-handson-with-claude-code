@@ -163,11 +163,9 @@ mod phase_c_tests {
         assert_eq!(tcp_flags & 0x10, 0x00); // ACKフラグは未設定
     }
 
-    // Task C2: SYN送信機能テスト
+    // Task C2-C3: SYN送信機能テスト
     #[test]
-    fn test_syn_sending() {
-        // send_syn実装後に有効化
-        /*
+    fn test_send_syn() {
         let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
 
@@ -182,24 +180,6 @@ mod phase_c_tests {
         assert_eq!(conn.state, TcpState::SynSent);
         assert_ne!(conn.local_seq, initial_seq); // ISNが設定された
         assert_ne!(conn.local_seq, 0);
-        */
-    }
-
-    // Task C3: 状態変更テスト
-    #[test]
-    fn test_state_transition_to_syn_sent() {
-        // 状態変更の単体テスト
-        /*
-        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
-        let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
-
-        assert_eq!(conn.state, TcpState::Closed);
-
-        // SYN送信（実際のネットワーク送信はスキップ可能）
-        conn.send_syn().unwrap();
-
-        assert_eq!(conn.state, TcpState::SynSent);
-        */
     }
 }
 

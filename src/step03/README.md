@@ -17,11 +17,11 @@ TCP接続確立の基本プロセス（3-way handshake）を実装し、実際�
 - [x] **Task B3**: Step2の`TcpHeader`を再利用できるよう調整
 - [x] **Task B4**: 基本的なパケット送信インフラを構築
 
-### Phase C: SYNパケット送信機能 (45分) 🔄 進行中
+### Phase C: SYNパケット送信機能 (45分) ✅ 完了
 - [x] **Task C1**: SYNパケット構築機能を実装
-- [ ] **Task C2**: 指定ホスト・ポートへのSYN送信機能を実装
-- [ ] **Task C3**: 送信後の状態をCLOSED→SYN-SENTに変更
-- [ ] **Task C4**: SYN送信のテストを作成
+- [x] **Task C2**: 指定ホスト・ポートへのSYN送信機能を実装
+- [x] **Task C3**: 送信後の状態をCLOSED→SYN-SENTに変更
+- [x] **Task C4**: SYN送信のテストを作成
 
 ### Phase D: SYN-ACKパケット受信処理 (60分)
 - [ ] **Task D1**: パケット受信のためのタイムアウト付きrecv実装
