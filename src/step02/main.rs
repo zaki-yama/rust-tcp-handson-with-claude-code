@@ -1,5 +1,3 @@
-use std::net::Ipv4Addr;
-
 pub const TCP_HEADER_SIZE: usize = 20;
 
 /// TCP Header Structure (RFC 9293 Section 3.1 - 2022 updated standard)
@@ -42,7 +40,6 @@ pub struct TcpHeader {
 }
 
 /// TCP Flags (RFC 9293 Section 3.1)
-#[allow(dead_code)]
 pub mod tcp_flags {
     pub const FIN: u8 = 0x01; // No more data from sender
     pub const SYN: u8 = 0x02; // Synchronize sequence numbers
@@ -64,7 +61,7 @@ impl TcpHeader {
     /// * `ack` - Acknowledgment number
     /// * `flags` - TCP flags (8 bits)
     /// * `window` - Window size
-    fn new(src_port: u16, dst_port: u16, seq: u32, ack: u32, flags: u8, window: u16) -> Self {
+    pub fn new(src_port: u16, dst_port: u16, seq: u32, ack: u32, flags: u8, window: u16) -> Self {
         Self {
             source_port: src_port,
             destination_port: dst_port,
@@ -124,7 +121,7 @@ impl TcpHeader {
     }
 
     /// Calculate TCP checksum with pseudo header
-    fn calculate_checksum(&mut self, src_ip: u32, dst_ip: u32, tcp_data: &[u8]) {
+    pub fn calculate_checksum(&mut self, src_ip: u32, dst_ip: u32, tcp_data: &[u8]) {
         self.checksum = 0; // 先にクリア
         let all_data = self.prepare_checksum_data(src_ip, dst_ip, tcp_data);
         self.checksum = calculate_checksum_rfc1071(&all_data);

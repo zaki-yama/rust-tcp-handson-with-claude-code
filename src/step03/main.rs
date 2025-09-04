@@ -23,6 +23,7 @@ pub struct TcpConnection {
     state: TcpState,
     local_seq: u32,  // 自分のシーケンス番号
     remote_seq: u32, // 相手のシーケンス番号
+    local_ip: Ipv4Addr,
     local_port: u16,
     remote_ip: Ipv4Addr,
     remote_port: u16,
@@ -33,6 +34,7 @@ impl TcpConnection {
         // - Raw socket作成
         let socket_fd = create_raw_socket()?;
 
+        let local_ip = get_local_ip().unwrap();
         let local_port = Self::choose_local_port();
 
         Ok(Self {
@@ -40,6 +42,7 @@ impl TcpConnection {
             state: TcpState::Closed,
             local_seq: 0,
             remote_seq: 0,
+            local_ip,
             local_port,
             remote_ip,
             remote_port,
@@ -60,7 +63,7 @@ impl TcpConnection {
         tcp_header: &TcpHeader,
         data: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let source = get_local_ip().unwrap();
+        let source = self.local_ip;
         let dest = Ipv4Addr::from(self.remote_ip);
         let data_len = TCP_HEADER_SIZE + data.len();
 
@@ -109,10 +112,23 @@ impl TcpConnection {
     }
 
     fn create_syn_packet(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        // Task C1: SYNパケット構築
-        // - SYNフラグ付きTCPヘッダー作成
-        // - チェックサム計算
-        todo!("Task C1: SYNパケット構築を実装してください")
+        let mut header = TcpHeader::new(
+            self.local_port,
+            self.remote_port,
+            self.local_seq, // ISN: generate_isnは使わない？
+            0,              // ACK番号は0
+            tcp_flags::SYN, // SYNフラグ（bit 1）
+            8192,           // ウィンドウサイズ
+        );
+
+        // チェックサム計算
+        header.calculate_checksum(
+            u32::from(self.local_ip),
+            u32::from(self.remote_ip),
+            &[], // データなし
+        );
+
+        Ok(header.to_bytes())
     }
 
     fn receive_packet_timeout(

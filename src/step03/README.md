@@ -11,14 +11,14 @@ TCP接続確立の基本プロセス（3-way handshake）を実装し、実際�
 - [x] **Task A3**: 基本的な接続状態（CLOSED, SYN-SENT, ESTABLISHED）を定義
 - [x] **Task A4**: プロジェクト構成を作成（main.rs, tests.rs, LEARNING_LOG.md）
 
-### Phase B: 基本構造の実装 (60分) 🔄 進行中
+### Phase B: 基本構造の実装 (60分) ✅ 完了
 - [x] **Task B1**: `TcpConnection`構造体を定義（状態管理用）
 - [x] **Task B2**: 初期シーケンス番号（ISN）生成機能を実装
-- [ ] **Task B3**: Step2の`TcpHeader`を再利用できるよう調整
-- [ ] **Task B4**: 基本的なパケット送信インフラを構築
+- [x] **Task B3**: Step2の`TcpHeader`を再利用できるよう調整
+- [x] **Task B4**: 基本的なパケット送信インフラを構築
 
-### Phase C: SYNパケット送信機能 (45分)
-- [ ] **Task C1**: SYNパケット構築機能を実装
+### Phase C: SYNパケット送信機能 (45分) 🔄 進行中
+- [x] **Task C1**: SYNパケット構築機能を実装
 - [ ] **Task C2**: 指定ホスト・ポートへのSYN送信機能を実装
 - [ ] **Task C3**: 送信後の状態をCLOSED→SYN-SENTに変更
 - [ ] **Task C4**: SYN送信のテストを作成

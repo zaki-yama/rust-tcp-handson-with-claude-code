@@ -27,8 +27,7 @@ mod phase_a_tests {
     #[test]
     fn test_tcp_connection_creation() {
         // TcpConnection::new実装後にテストを有効化
-        /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         // 初期状態の確認
@@ -36,7 +35,6 @@ mod phase_a_tests {
         assert!(!conn.is_connected());
         assert_eq!(conn.remote_ip, remote_ip);
         assert_eq!(conn.remote_port, 80);
-        */
     }
 }
 
@@ -51,7 +49,7 @@ mod phase_b_tests {
     // Task B1: TcpConnection構造体テスト
     #[test]
     fn test_tcp_connection_new() {
-        let remote_ip = u32::from_be_bytes([192, 168, 1, 100]);
+        let remote_ip = Ipv4Addr::new(192, 168, 1, 100);
         let remote_port = 8080;
 
         let conn = TcpConnection::new(remote_ip, remote_port).unwrap();
@@ -108,13 +106,11 @@ mod phase_b_tests {
     #[test]
     fn test_socket_creation() {
         // TcpConnection::newでraw socketが作成されることをテスト
-        /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         // ソケットファイルディスクリプタが有効
         assert!(conn.socket_fd > 0);
-        */
     }
 }
 
@@ -130,27 +126,41 @@ mod phase_c_tests {
     #[test]
     fn test_syn_packet_creation() {
         // TcpConnection実装後に有効化
-        /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         let syn_packet = conn.create_syn_packet().unwrap();
 
-        // パケット形式の基本チェック
-        assert!(syn_packet.len() >= 40); // 最小IP+TCPヘッダーサイズ
+        // TCPヘッダーのサイズチェック
+        assert_eq!(syn_packet.len(), 20);
 
-        // IPヘッダーの確認
-        assert_eq!(syn_packet[0] >> 4, 4); // IP version 4
-        let ip_header_len = ((syn_packet[0] & 0x0F) * 4) as usize;
-        assert_eq!(ip_header_len, 20); // 標準IPヘッダー
-        assert_eq!(syn_packet[9], 6); // TCP protocol
+        // TCPヘッダーのフィールド確認
 
-        // TCPヘッダー部分のSYNフラグチェック
-        let tcp_start = ip_header_len;
-        let tcp_flags = syn_packet[tcp_start + 13];
+        // source port
+        assert_eq!(
+            u16::from_be_bytes([syn_packet[0], syn_packet[1]]),
+            conn.local_port
+        );
+        // dest port
+        assert_eq!(
+            u16::from_be_bytes([syn_packet[2], syn_packet[3]]),
+            conn.remote_port
+        );
+        // seq number
+        assert_eq!(
+            u32::from_be_bytes([syn_packet[4], syn_packet[5], syn_packet[6], syn_packet[7]]),
+            conn.local_seq
+        );
+        // ack number
+        assert_eq!(
+            u32::from_be_bytes([syn_packet[8], syn_packet[9], syn_packet[10], syn_packet[11]]),
+            0
+        );
+
+        // TCPフラグの確認
+        let tcp_flags = syn_packet[13];
         assert_eq!(tcp_flags & 0x02, 0x02); // SYNフラグ
         assert_eq!(tcp_flags & 0x10, 0x00); // ACKフラグは未設定
-        */
     }
 
     // Task C2: SYN送信機能テスト
@@ -158,7 +168,7 @@ mod phase_c_tests {
     fn test_syn_sending() {
         // send_syn実装後に有効化
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         // 初期状態確認
@@ -180,7 +190,7 @@ mod phase_c_tests {
     fn test_state_transition_to_syn_sent() {
         // 状態変更の単体テスト
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         assert_eq!(conn.state, TcpState::Closed);
@@ -206,7 +216,7 @@ mod phase_d_tests {
     fn test_receive_timeout() {
         // receive_packet_timeout実装後に有効化
         /*
-        let remote_ip = u32::from_be_bytes([192, 168, 255, 254]); // 到達不可能
+        let remote_ip = Ipv4Addr::new(192, 168, 255, 254); // 到達不可能
         let conn = TcpConnection::new(remote_ip, 12345).unwrap();
 
         let start = Instant::now();
@@ -225,7 +235,7 @@ mod phase_d_tests {
     fn test_packet_parsing() {
         // parse_received_packet実装後に有効化
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         // 模擬IPパケット（IP + TCPヘッダー）
@@ -244,7 +254,7 @@ mod phase_d_tests {
     fn test_syn_ack_validation() {
         // is_correct_syn_ack実装後に有効化
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
         conn.local_seq = 1000; // テスト用に設定
 
@@ -268,7 +278,7 @@ mod phase_d_tests {
     fn test_ack_number_validation() {
         // ACK番号の正確性チェック
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
         conn.local_seq = 12345;
 
@@ -299,7 +309,7 @@ mod phase_e_tests {
     fn test_ack_packet_creation() {
         // create_ack_packet実装後に有効化
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
         conn.local_seq = 1000;
 
@@ -325,7 +335,7 @@ mod phase_e_tests {
     fn test_ack_sending() {
         // send_ack実装後に有効化
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
         conn.local_seq = 1000;
 
@@ -340,7 +350,7 @@ mod phase_e_tests {
     // Task E3: 接続確立完了テスト
     #[test]
     fn test_handshake_completion() {
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).expect("Failed to create connection");
 
         // SYN-SENT状態から開始（テスト用）
@@ -359,7 +369,7 @@ mod phase_e_tests {
     // Task E4: 接続確認テスト
     #[test]
     fn test_connection_status() {
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).expect("Failed to create connection");
 
         // 各状態での接続確認
@@ -387,7 +397,7 @@ mod phase_f_tests {
     fn test_complete_handshake() {
         // connect実装後に有効化
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 8080).unwrap();
 
         // 3-way handshake実行
@@ -409,7 +419,7 @@ mod phase_f_tests {
     fn test_real_server_connection() {
         /*
         // httpbin.org など公開サーバーとのテスト
-        let remote_ip = u32::from_be_bytes([httpbin_org_ip]);
+        let remote_ip = Ipv4Addr::new(54, 92, 72, 139); // httpbin.org example IP
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         let start = Instant::now();
@@ -437,7 +447,7 @@ mod phase_f_tests {
         std::thread::sleep(Duration::from_secs(3)); // 準備時間
 
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 8080).unwrap();
 
         println!("Starting 3-way handshake...");
@@ -455,7 +465,7 @@ mod phase_f_tests {
     fn test_connection_timeout() {
         // 到達不可能なアドレスでタイムアウトテスト
         /*
-        let remote_ip = u32::from_be_bytes([192, 168, 255, 254]);
+        let remote_ip = Ipv4Addr::new(192, 168, 255, 254);
         let mut conn = TcpConnection::new(remote_ip, 12345).unwrap();
 
         let start = Instant::now();
@@ -476,7 +486,7 @@ mod phase_f_tests {
     fn test_connection_refused() {
         // 接続拒否テスト
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 65432).unwrap(); // 未使用ポート
 
         let result = conn.connect(2);
@@ -503,7 +513,7 @@ mod performance_tests {
     #[ignore] // パフォーマンステストは手動実行
     fn test_connection_performance() {
         /*
-        let remote_ip = u32::from_be_bytes([127, 0, 0, 1]);
+        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut total_time = Duration::new(0, 0);
         let iterations = 5;
 
