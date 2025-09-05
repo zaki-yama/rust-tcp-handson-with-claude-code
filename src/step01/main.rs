@@ -3,7 +3,7 @@ use log::info;
 use std::{error::Error, net::Ipv4Addr};
 
 // 必要な定数
-const IP_HEADER_SIZE: usize = 20;
+pub const IP_HEADER_SIZE: usize = 20;
 
 // ローカルIPアドレスを取得する関数
 pub fn get_local_ip() -> Option<Ipv4Addr> {

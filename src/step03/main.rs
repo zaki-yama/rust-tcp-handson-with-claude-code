@@ -1,9 +1,10 @@
 use std::net::Ipv4Addr;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use log::info;
 // Step01とStep02の実装を共通ライブラリから使用
 use rust_tcp_handson_with_claude_code::step01::{
-    create_raw_socket, get_local_ip, send_packet, IpHeader,
+    create_raw_socket, get_local_ip, send_packet, IpHeader, IP_HEADER_SIZE,
 };
 use rust_tcp_handson_with_claude_code::step02::{
     calculate_checksum_rfc1071, tcp_flags, TcpHeader, TCP_HEADER_SIZE,
@@ -138,10 +139,21 @@ impl TcpConnection {
         &self,
         timeout_secs: u64,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        // Task D1: タイムアウト付きパケット受信
-        // - ノンブロッキング受信のループ
-        // - タイムアウト判定
-        todo!("Task D1: タイムアウト付き受信を実装してください")
+        let start = Instant::now();
+        let timeout = Duration::from_secs(timeout_secs);
+
+        loop {
+            // ノンブロッキング受信を試行
+            match self.try_receive_packet() {
+                Ok(data) => return Ok(data),
+                Err(_) => {
+                    if start.elapsed() > timeout {
+                        return Err("Timeout".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+            }
+        }
     }
 
     fn parse_received_packet(&self, data: &[u8]) -> Result<Vec<u8>, &'static str> {
@@ -204,6 +216,42 @@ impl TcpConnection {
                 .unwrap()
                 .as_secs() as u16
                 % (65535 - 49152))
+    }
+
+    fn try_receive_packet(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        // 最大IPパケットサイズ（65535バイト）
+        const MAX_PACKET_SIZE: usize = 65535;
+        let mut buffer = vec![0u8; MAX_PACKET_SIZE];
+
+        let bytes_received = unsafe {
+            libc::recv(
+                self.socket_fd,
+                buffer.as_mut_ptr() as *mut libc::c_void,
+                buffer.len(),
+                libc::MSG_DONTWAIT, // ノンブロッキングフラグ
+            )
+        };
+
+        if bytes_received < 0 {
+            let errno = unsafe { *libc::__error() };
+
+            // ノンブロッキングで利用可能なデータがない場合
+            if errno == libc::EAGAIN || errno == libc::EWOULDBLOCK {
+                info!("Received {} bytes", bytes_received);
+                return Err("No data available".into());
+            }
+            return Err(format!("Failed to receive packet: errno {}", errno).into());
+        }
+
+        if bytes_received < IP_HEADER_SIZE as isize {
+            return Err("Received packet too short for IP header".into());
+        }
+
+        info!("Received {} bytes", bytes_received);
+
+        // 受信したパケット全体を返す
+        buffer.truncate(bytes_received as usize);
+        Ok(buffer)
     }
 }
 

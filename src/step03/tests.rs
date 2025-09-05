@@ -194,8 +194,6 @@ mod phase_d_tests {
     // Task D1: タイムアウト付き受信テスト
     #[test]
     fn test_receive_timeout() {
-        // receive_packet_timeout実装後に有効化
-        /*
         let remote_ip = Ipv4Addr::new(192, 168, 255, 254); // 到達不可能
         let conn = TcpConnection::new(remote_ip, 12345).unwrap();
 
@@ -207,7 +205,6 @@ mod phase_d_tests {
         assert!(result.is_err());
         assert!(elapsed >= Duration::from_secs(1));
         assert!(elapsed < Duration::from_secs(2)); // 多少のマージン
-        */
     }
 
     // Task D2: 受信パケット解析テスト
