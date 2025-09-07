@@ -4,7 +4,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use log::info;
 // Step01とStep02の実装を共通ライブラリから使用
 use rust_tcp_handson_with_claude_code::step01::{
-    create_raw_socket, get_local_ip, send_packet, IpHeader, IP_HEADER_SIZE,
+    create_raw_socket, get_local_ip, send_packet, IpHeader, IP_HEADER_SIZE, IP_PROTOCOL_TCP,
 };
 use rust_tcp_handson_with_claude_code::step02::{
     calculate_checksum_rfc1071, tcp_flags, TcpHeader, TCP_HEADER_SIZE,
@@ -156,11 +156,35 @@ impl TcpConnection {
         }
     }
 
-    fn parse_received_packet(&self, data: &[u8]) -> Result<Vec<u8>, &'static str> {
+    fn parse_received_packet(&self, data: &[u8]) -> Result<TcpHeader, Box<dyn std::error::Error>> {
         // Task D2: 受信パケット解析
         // - IPヘッダー長計算
-        // - TCPヘッダー抽出・パース
-        todo!("Task D2: 受信パケット解析を実装してください")
+        if data.len() < IP_HEADER_SIZE {
+            return Err("Packet too short".into());
+        }
+
+        // IPプロトコルチェック
+        let protocol = data[9];
+        if protocol != IP_PROTOCOL_TCP {
+            return Err("Not a TCP packet".into());
+        }
+
+        // IP ヘッダーの 1 バイト目は version (4bit) + IHL: Internet Header Length (4bit)
+        // IHL の情報から IP ヘッダーのバイト数を算出するため下位 4bit の IHL だけを抽出
+        let ip_header_len = ((data[0] & 0x0F) * 4) as usize;
+        if data.len() < ip_header_len + 20 {
+            return Err("TCP header incomplete".into());
+        }
+
+        // TCPヘッダー部分を抽出
+        let tcp_data = &data[ip_header_len..];
+
+        let tcp_header = TcpHeader::from_bytes(tcp_data)?;
+        // ポート番号チェック
+        if tcp_header.get_destination_port() != self.local_port {
+            return Err("Packet not for this connection".into());
+        }
+        Ok(tcp_header)
     }
 
     fn is_correct_syn_ack(&self, tcp_header: &[u8]) -> bool {

@@ -90,7 +90,7 @@ impl TcpHeader {
     }
 
     /// Parse TCP header from byte array
-    fn from_bytes(data: &[u8]) -> Result<Self, &'static str> {
+    pub fn from_bytes(data: &[u8]) -> Result<Self, &'static str> {
         if data.len() < TCP_HEADER_SIZE {
             return Err("Data too short for TCP header");
         }
@@ -144,6 +144,10 @@ impl TcpHeader {
     /// Extract data offset from data_offset_and_flags field
     fn get_data_offset(&self) -> u8 {
         ((self.data_offset_and_flags >> 12) & 0x0F) as u8
+    }
+
+    pub fn get_destination_port(&self) -> u16 {
+        self.destination_port
     }
 }
 

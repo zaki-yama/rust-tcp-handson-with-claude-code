@@ -4,6 +4,7 @@ use std::{error::Error, net::Ipv4Addr};
 
 // 必要な定数
 pub const IP_HEADER_SIZE: usize = 20;
+pub const IP_PROTOCOL_TCP: u8 = 6;
 
 // ローカルIPアドレスを取得する関数
 pub fn get_local_ip() -> Option<Ipv4Addr> {
@@ -89,7 +90,7 @@ impl IpHeader {
             id: 0,                        // ID（カーネルが設定）
             flags_fragment: 0x4000,       // Don't Fragment（ホストバイトオーダー）
             ttl: 64,                      // Time To Live
-            protocol: 6,                  // TCP
+            protocol: IP_PROTOCOL_TCP,    // TCP
             checksum: 0,                  // チェックサム（カーネルが計算）
             source: u32::from(source),    // 送信元IP
             destination: u32::from(dest), // 宛先IP
@@ -289,10 +290,10 @@ fn parse_ip_header(data: &[u8]) -> Result<IpHeader, Box<dyn Error>> {
         .into());
     }
 
-    if header.protocol != 6 {
+    if header.protocol != IP_PROTOCOL_TCP {
         return Err(format!(
-            "Expected TCP (protocol 6), got protocol {}",
-            header.protocol
+            "Expected TCP (protocol {}), got protocol {}",
+            IP_PROTOCOL_TCP, header.protocol
         )
         .into());
     }

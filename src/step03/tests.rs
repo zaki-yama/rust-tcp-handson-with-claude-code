@@ -210,20 +210,36 @@ mod phase_d_tests {
     // Task D2: 受信パケット解析テスト
     #[test]
     fn test_packet_parsing() {
-        // parse_received_packet実装後に有効化
-        /*
         let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let conn = TcpConnection::new(remote_ip, 80).unwrap();
 
-        // 模擬IPパケット（IP + TCPヘッダー）
-        let mut packet = vec![0u8; 40];
-        packet[0] = 0x45; // IP version 4, header length 20
-        packet[9] = 6;    // TCP protocol
-        // TCPヘッダー部分の設定...
+        // Step2のTcpHeaderで正しいTCPヘッダーを作成
+        let tcp_header = TcpHeader::new(
+            80,              // source port (remote)
+            conn.local_port, // destination port (local)
+            1000,            // sequence number
+            2000,            // ack number
+            tcp_flags::SYN,  // flags
+            8192,            // window
+        );
 
+        // 完全なパケットを構築（IP + TCP）
+        let ip_header = IpHeader::new(remote_ip, conn.local_ip, TCP_HEADER_SIZE as u16);
+        let mut packet = ip_header.to_bytes();
+        packet.extend_from_slice(&tcp_header.to_bytes());
+
+        // パース実行
         let result = conn.parse_received_packet(&packet);
-        assert!(result.is_ok());
-        */
+
+        // 結果検証
+        assert!(result.is_ok(), "Packet parsing should succeed");
+
+        let parsed_tcp = result.unwrap();
+        assert_eq!(
+            parsed_tcp.get_destination_port(),
+            conn.local_port,
+            "Destination port should match local port"
+        );
     }
 
     // Task D3: SYN-ACK検証テスト
