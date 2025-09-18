@@ -3,6 +3,28 @@
 ## 学習目標
 TCP接続確立の基本プロセス（3-way handshake）を実装し、実際のサーバーとの接続を確立する
 
+```mermaid
+sequenceDiagram
+    participant C as Client<br/>(Your Code)
+    participant S as Server
+
+    Note over C: State: CLOSED
+    Note over S: State: LISTEN
+
+    C->>+S: 1. SYN<br/>seq=100, ack=0<br/>flags=0x02
+    Note over C: State: SYN-SENT
+    Note over S: State: SYN-RECEIVED
+
+    S->>+C: 2. SYN-ACK<br/>seq=200, ack=101<br/>flags=0x12
+    Note over C: ⭐ Task D3:<br/>この時点で検証
+
+    C->>S: 3. ACK<br/>seq=101, ack=201<br/>flags=0x10
+    Note over C: State: ESTABLISHED
+    Note over S: State: ESTABLISHED
+
+    Note over C,S: 接続確立完了！
+```
+
 ## [create_syn_packet等の関数の型設計について]
 
 ### 質問内容
