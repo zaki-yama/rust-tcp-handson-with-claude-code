@@ -245,25 +245,57 @@ mod phase_d_tests {
     // Task D3: SYN-ACK検証テスト
     #[test]
     fn test_syn_ack_validation() {
-        // is_correct_syn_ack実装後に有効化
-        /*
         let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
         conn.local_seq = 1000; // テスト用に設定
 
-        // 正しいSYN-ACKパケットのTCPヘッダー
-        let mut tcp_header = vec![0u8; 20];
-        tcp_header[12] = 0x50; // data offset = 5
-        tcp_header[13] = 0x12; // SYN + ACK flags
-        // ack_number = local_seq + 1 = 1001
-        tcp_header[8..12].copy_from_slice(&1001u32.to_be_bytes());
+        // 正しいSYN-ACKパケット用のTcpHeader
+        let syn_ack_header = TcpHeader::new(
+            conn.remote_port,                // source port (remote)
+            conn.local_port,                 // destination port (local)
+            2000,                            // sequence number (サーバーのISN)
+            1001,                            // ack number (local_seq + 1)
+            tcp_flags::SYN | tcp_flags::ACK, // SYN + ACK flags
+            8192,                            // window
+        );
 
-        assert!(conn.is_correct_syn_ack(&tcp_header));
+        assert!(conn.is_correct_syn_ack(&syn_ack_header));
 
         // 不正なフラグ（SYNのみ）
-        tcp_header[13] = 0x02; // SYN only
-        assert!(!conn.is_correct_syn_ack(&tcp_header));
-        */
+        let syn_only_header = TcpHeader::new(
+            conn.remote_port,
+            conn.local_port,
+            2000,
+            1001,
+            tcp_flags::SYN, // SYN only (ACKなし)
+            8192,
+        );
+
+        assert!(!conn.is_correct_syn_ack(&syn_only_header));
+
+        // 不正なACK番号
+        let wrong_ack_header = TcpHeader::new(
+            conn.remote_port,
+            conn.local_port,
+            2000,
+            1000, // wrong ack (should be local_seq + 1 = 1001)
+            tcp_flags::SYN | tcp_flags::ACK,
+            8192,
+        );
+
+        assert!(!conn.is_correct_syn_ack(&wrong_ack_header));
+
+        // ポート番号違い
+        let wrong_port_number = TcpHeader::new(
+            9999, // wrong source port
+            conn.local_port,
+            2000,
+            1001,
+            tcp_flags::SYN | tcp_flags::ACK,
+            8192,
+        );
+
+        assert!(!conn.is_correct_syn_ack(&wrong_port_number));
     }
 
     // Task D4: ACK番号チェックテスト

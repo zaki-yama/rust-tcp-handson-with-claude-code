@@ -136,7 +136,7 @@ impl TcpHeader {
     }
 
     /// Extract flags from data_offset_and_flags field
-    fn get_flags(&self) -> u8 {
+    pub fn get_flags(&self) -> u8 {
         // Extract lower 8 bits as flags
         (self.data_offset_and_flags & 0xFF) as u8
     }
@@ -146,8 +146,16 @@ impl TcpHeader {
         ((self.data_offset_and_flags >> 12) & 0x0F) as u8
     }
 
+    pub fn get_source_port(&self) -> u16 {
+        self.source_port
+    }
+
     pub fn get_destination_port(&self) -> u16 {
         self.destination_port
+    }
+
+    pub fn get_ack_number(&self) -> u32 {
+        self.acknowledgment_number
     }
 }
 

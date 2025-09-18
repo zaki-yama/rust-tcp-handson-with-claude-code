@@ -187,12 +187,20 @@ impl TcpConnection {
         Ok(tcp_header)
     }
 
-    fn is_correct_syn_ack(&self, tcp_header: &[u8]) -> bool {
+    fn is_correct_syn_ack(&self, tcp_header: &TcpHeader) -> bool {
         // Task D3: SYN-ACK検証
         // - SYN + ACKフラグチェック
+        let flags = tcp_header.get_flags();
+        let has_syn_ack = (flags & tcp_flags::SYN) != 0 && (flags & tcp_flags::ACK) != 0;
+
         // - ACK番号の正確性チェック (local_seq + 1)
+        let has_correct_ack = tcp_header.get_ack_number() == self.local_seq + 1;
+
         // - ポート番号チェック
-        todo!("Task D3: SYN-ACK検証ロジックを実装してください")
+        let has_correct_ports = tcp_header.get_source_port() == self.remote_port
+            && tcp_header.get_destination_port() == self.local_port;
+
+        has_syn_ack && has_correct_ack && has_correct_ports
     }
 
     fn send_ack(&mut self, ack_number: u32) -> Result<(), Box<dyn std::error::Error>> {
