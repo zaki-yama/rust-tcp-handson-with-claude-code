@@ -298,27 +298,8 @@ mod phase_d_tests {
         assert!(!conn.is_correct_syn_ack(&wrong_port_number));
     }
 
-    // Task D4: ACK番号チェックテスト
-    #[test]
-    fn test_ack_number_validation() {
-        // ACK番号の正確性チェック
-        /*
-        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
-        let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
-        conn.local_seq = 12345;
-
-        // 正しいACK番号 (local_seq + 1)
-        let mut tcp_header = vec![0u8; 20];
-        tcp_header[13] = 0x12; // SYN + ACK
-        tcp_header[8..12].copy_from_slice(&(12345u32 + 1).to_be_bytes());
-
-        assert!(conn.is_correct_syn_ack(&tcp_header));
-
-        // 間違ったACK番号
-        tcp_header[8..12].copy_from_slice(&12345u32.to_be_bytes());
-        assert!(!conn.is_correct_syn_ack(&tcp_header));
-        */
-    }
+    // Task D4: ACK番号チェック機能 - Task D3に統合済み
+    // test_syn_ack_validation() で ACK番号の正確性チェックをテスト済み
 }
 
 // =============================================================================

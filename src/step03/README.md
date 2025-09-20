@@ -23,11 +23,11 @@ TCP接続確立の基本プロセス（3-way handshake）を実装し、実際�
 - [x] **Task C3**: 送信後の状態をCLOSED→SYN-SENTに変更
 - [x] **Task C4**: SYN送信のテストを作成
 
-### Phase D: SYN-ACKパケット受信処理 (60分)
-- [ ] **Task D1**: パケット受信のためのタイムアウト付きrecv実装
-- [ ] **Task D2**: 受信パケットのTCPヘッダー解析機能
-- [ ] **Task D3**: SYN-ACKパケットの検証ロジック実装
-- [ ] **Task D4**: ACK番号の正確性チェック機能
+### Phase D: SYN-ACKパケット受信処理 (60分) ✅ 完了
+- [x] **Task D1**: パケット受信のためのタイムアウト付きrecv実装
+- [x] **Task D2**: 受信パケットのTCPヘッダー解析機能
+- [x] **Task D3**: SYN-ACKパケットの検証ロジック実装（ACK番号チェック含む）
+- [x] **Task D4**: ACK番号の正確性チェック機能（D3に統合済み）
 
 ### Phase E: ACKパケット送信と接続完了 (45分)
 - [ ] **Task E1**: SYN-ACK受信後のACKパケット構築
