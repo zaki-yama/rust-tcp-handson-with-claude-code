@@ -103,22 +103,23 @@ src/step03/
 
 #### Task B1: TcpConnection構造体
 **何をする**: 接続状態を管理する構造体を定義
+**実装内容**:
 ```rust
 #[derive(Debug)]
 pub struct TcpConnection {
-    socket_fd: i32,
-    state: TcpState,
-    local_seq: u32,     // 自分のシーケンス番号
-    remote_seq: u32,    // 相手のシーケンス番号
-    local_port: u16,
-    remote_ip: u32,
-    remote_port: u16,
+    // 実装ヒント:
+    // - socket_fd: Raw socketのファイルディスクリプタ
+    // - state: 現在のTCP状態
+    // - local_seq, remote_seq: シーケンス番号管理
+    // - local_port, remote_ip, remote_port: 接続情報
 }
 
 impl TcpConnection {
-    fn new(remote_ip: u32, remote_port: u16) -> Result<Self, Box<dyn std::error::Error>> {
-        // Raw socket作成
-        // 初期状態設定
+    fn new(remote_ip: Ipv4Addr, remote_port: u16) -> Result<Self, Box<dyn std::error::Error>> {
+        // 実装ヒント:
+        // - create_raw_socket()でRaw socket作成
+        // - 初期状態をTcpState::Closedに設定
+        // - ローカルポートの動的選択
     }
 }
 ```
@@ -126,34 +127,34 @@ impl TcpConnection {
 #### Task B2: ISN生成
 **何をする**: RFC準拠の初期シーケンス番号生成
 ```rust
-use std::time::{SystemTime, UNIX_EPOCH};
-
 fn generate_isn() -> u32 {
-    // 現在時刻ベースの安全なISN生成
-    // RFC 6528推奨の手法を簡易実装
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as u32;
-    now.wrapping_add(rand::random::<u32>())
+    // 実装ヒント:
+    // - RFC 6528推奨の安全なISN生成手法
+    // - 現在時刻ベースの値
+    // - ランダム要素の追加（簡易実装）
+    // - wrapping_add()で安全なオーバーフロー処理
 }
 ```
 
 #### Task B3: TcpHeader再利用
-*何をする**: Step2のTcpHeaderを import して使用
+**何をする**: Step2のTcpHeaderを import して使用
 ```rust
-// Step2のコードを参照可能にする
-use crate::step02::{TcpHeader, calculate_checksum_rfc1071};
+// 実装ヒント:
+// - Step2で実装したTcpHeaderとチェックサム関数を再利用
+// - 適切なuse文でインポート
+// - 既存のコードを活用して開発効率を向上
 ```
 
 #### Task B4: パケット送信インフラ
 **何をする**: IPパケット送信の基盤機能
 ```rust
 impl TcpConnection {
-    fn send_tcp_packet(&self, tcp_header: &TcpHeader, data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
-        // Step1のIPヘッダー作成
-        // TCPヘッダー + データの結合
-        // Raw socket送信
+    fn send_tcp_packet(&self, tcp_header_bytes: &[u8], data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+        // 実装ヒント:
+        // - Step1のIPヘッダー作成機能を再利用
+        // - TCPヘッダー + データの結合
+        // - sendto()システムコールでRaw socket送信
+        // - 適切なsockaddr_in構造体の設定
     }
 }
 ```
@@ -166,24 +167,13 @@ impl TcpConnection {
 **何をする**: SYNフラグ付きTCPヘッダーを作成
 ```rust
 impl TcpConnection {
-    fn create_syn_packet(&self) -> TcpHeader {
-        let mut header = TcpHeader::new(
-            self.local_port,
-            self.remote_port,
-            self.local_seq,     // ISN
-            0,                  // ACK番号は0
-            0x02,              // SYNフラグ（bit 1）
-            8192,              // ウィンドウサイズ
-        );
-        
-        // チェックサム計算
-        header.calculate_checksum(
-            u32::from_be_bytes([127, 0, 0, 1]), // 送信元IP
-            self.remote_ip,
-            &[]  // データなし
-        );
-        
-        header
+    fn create_syn_packet(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        // 実装ヒント:
+        // - TcpHeader::new()でヘッダー作成
+        // - seq番号: self.local_seq (ISN)
+        // - ack番号: 0 (SYNパケットでは未使用)
+        // - フラグ: tcp_flags::SYN
+        // - チェックサム計算を忘れずに
     }
 }
 ```
@@ -193,12 +183,12 @@ impl TcpConnection {
 ```rust
 impl TcpConnection {
     fn send_syn(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        self.local_seq = generate_isn();
-        let syn_packet = self.create_syn_packet();
-        self.send_tcp_packet(&syn_packet, &[])?;
-        self.state = TcpState::SynSent;
-        println!("SYN sent: seq={}", self.local_seq);
-        Ok(())
+        // 実装ヒント:
+        // - generate_isn()でISNを生成
+        // - create_syn_packet()でSYNパケット作成
+        // - send_tcp_packet()で送信
+        // - 状態をClosed→SynSentに変更
+        // - ログ出力で送信内容を確認
     }
 }
 ```
@@ -234,25 +224,13 @@ fn test_syn_packet_creation() {
 #### Task D1: タイムアウト付き受信
 **何をする**: 指定時間内のパケット受信機能
 ```rust
-use std::time::{Duration, Instant};
-
 impl TcpConnection {
     fn receive_packet_timeout(&self, timeout_secs: u64) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        let start = Instant::now();
-        let timeout = Duration::from_secs(timeout_secs);
-        
-        loop {
-            // ノンブロッキング受信を試行
-            match self.try_receive_packet() {
-                Ok(data) => return Ok(data),
-                Err(_) => {
-                    if start.elapsed() > timeout {
-                        return Err("Timeout".into());
-                    }
-                    std::thread::sleep(Duration::from_millis(10));
-                }
-            }
-        }
+        // 実装ヒント:
+        // - Instant::now()で開始時刻を記録
+        // - ループでノンブロッキング受信を繰り返し
+        // - タイムアウトチェックとスリープ処理
+        // - recv()システムコールでMSG_DONTWAITフラグ使用
     }
 }
 ```
@@ -261,20 +239,13 @@ impl TcpConnection {
 **何をする**: 受信パケットからTCPヘッダーを抽出
 ```rust
 impl TcpConnection {
-    fn parse_received_packet(&self, data: &[u8]) -> Result<TcpHeader, &'static str> {
-        // IPヘッダー長を計算（可変長の可能性）
-        if data.len() < 20 {
-            return Err("Packet too short");
-        }
-        
-        let ip_header_len = ((data[0] & 0x0F) * 4) as usize;
-        if data.len() < ip_header_len + 20 {
-            return Err("TCP header incomplete");
-        }
-        
-        // TCPヘッダー部分を抽出
-        let tcp_data = &data[ip_header_len..];
-        TcpHeader::from_bytes(tcp_data)
+    fn parse_received_packet(&self, data: &[u8]) -> Result<TcpHeader, Box<dyn std::error::Error>> {
+        // 実装ヒント:
+        // - IPヘッダー長の動的計算（IHLフィールドから）
+        // - パケット長のバリデーション
+        // - TCPヘッダー部分の抽出
+        // - TcpHeader::from_bytes()でパース
+        // - ポート番号のチェック
     }
 }
 ```
@@ -283,19 +254,12 @@ impl TcpConnection {
 **何をする**: 受信パケットがSYN-ACKかチェック
 ```rust
 impl TcpConnection {
-    fn is_syn_ack(&self, header: &TcpHeader) -> bool {
-        // SYN + ACKフラグの確認
-        let flags = header.get_flags(); // 要実装
-        let has_syn = (flags & 0x02) != 0;
-        let has_ack = (flags & 0x10) != 0;
-        
-        has_syn && has_ack
-    }
-    
-    fn is_correct_syn_ack(&self, header: &TcpHeader) -> bool {
-        self.is_syn_ack(header) && 
-        header.get_ack_number() == self.local_seq + 1 &&
-        header.get_destination_port() == self.local_port
+    fn is_correct_syn_ack(&self, tcp_header: &TcpHeader) -> bool {
+        // 実装ヒント:
+        // - SYNフラグとACKフラグの同時チェック
+        // - ACK番号が local_seq + 1 に一致するか検証
+        // - ポート番号の正確性チェック
+        // - tcp_flags定数を使用してフラグチェック
     }
 }
 ```
@@ -313,24 +277,13 @@ impl TcpConnection {
 **何をする**: SYN-ACK応答のACKパケット作成
 ```rust
 impl TcpConnection {
-    fn create_ack_packet(&self, ack_number: u32) -> TcpHeader {
-        let mut header = TcpHeader::new(
-            self.local_port,
-            self.remote_port,
-            self.local_seq + 1,    // SYN送信後なので+1
-            ack_number,            // 相手のseq + 1
-            0x10,                  // ACKフラグ（bit 4）
-            8192,                  // ウィンドウサイズ
-        );
-        
-        // チェックサム計算
-        header.calculate_checksum(
-            u32::from_be_bytes([127, 0, 0, 1]),
-            self.remote_ip,
-            &[]
-        );
-        
-        header
+    fn create_ack_packet(&self, ack_number: u32) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        // 実装ヒント:
+        // - ACKフラグ付きTCPヘッダーを作成
+        // - seq番号: local_seq + 1 (SYN送信後なので+1)
+        // - ack番号: パラメータで受け取った ack_number
+        // - フラグ: tcp_flags::ACK
+        // - チェックサム計算を忘れずに
     }
 }
 ```
@@ -340,11 +293,11 @@ impl TcpConnection {
 ```rust
 impl TcpConnection {
     fn send_ack(&mut self, ack_number: u32) -> Result<(), Box<dyn std::error::Error>> {
-        let ack_packet = self.create_ack_packet(ack_number);
-        self.send_tcp_packet(&ack_packet, &[])?;
-        self.remote_seq = ack_number - 1; // 相手のシーケンス番号を記録
-        println!("ACK sent: seq={}, ack={}", self.local_seq + 1, ack_number);
-        Ok(())
+        // 実装ヒント:
+        // - Task E1で作成したcreate_ack_packet()を使用
+        // - send_tcp_packet()でACKパケットを送信
+        // - remote_seqを適切に更新（ack_number - 1）
+        // - ログ出力で送信内容を確認
     }
 }
 ```
@@ -354,9 +307,10 @@ impl TcpConnection {
 ```rust
 impl TcpConnection {
     fn complete_handshake(&mut self) {
-        self.state = TcpState::Established;
-        self.local_seq += 1; // SYNの消費
-        println!("Connection established!");
+        // 実装ヒント:
+        // - 状態をTcpState::Establishedに変更
+        // - local_seqをインクリメント（SYNの消費分）
+        // - 接続確立完了のログ出力
     }
 }
 ```
@@ -366,7 +320,9 @@ impl TcpConnection {
 ```rust
 impl TcpConnection {
     fn is_connected(&self) -> bool {
-        self.state == TcpState::Established
+        // 実装ヒント:
+        // - 現在の状態がTcpState::Establishedかチェック
+        // - 単純な状態比較で実装可能
     }
 }
 ```
@@ -380,25 +336,12 @@ impl TcpConnection {
 ```rust
 impl TcpConnection {
     fn connect(&mut self, timeout_secs: u64) -> Result<(), Box<dyn std::error::Error>> {
-        // 1. SYN送信
-        self.send_syn()?;
-        
-        // 2. SYN-ACK受信
-        let response = self.receive_packet_timeout(timeout_secs)?;
-        let syn_ack = self.parse_received_packet(&response)?;
-        
-        if !self.is_correct_syn_ack(&syn_ack) {
-            return Err("Invalid SYN-ACK received".into());
-        }
-        
-        // 3. ACK送信
-        let ack_number = syn_ack.get_sequence_number() + 1;
-        self.send_ack(ack_number)?;
-        
-        // 4. 接続完了
-        self.complete_handshake();
-        
-        Ok(())
+        // 実装ヒント: 3-way handshakeの完全な流れ
+        // 1. SYN送信 (send_syn()を使用)
+        // 2. SYN-ACK受信・検証 (receive_packet_timeout, parse_received_packet, is_correct_syn_ack)
+        // 3. ACK送信 (send_ack()を使用、ack番号 = 受信したseq + 1)
+        // 4. 接続完了 (complete_handshake()を使用)
+        todo!("Task F1: 3-way handshake全体の流れを実装してください")
     }
 }
 ```
