@@ -313,27 +313,40 @@ mod phase_e_tests {
     // Task E1: ACKパケット構築テスト
     #[test]
     fn test_ack_packet_creation() {
-        // create_ack_packet実装後に有効化
-        /*
         let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
         conn.local_seq = 1000;
 
         let ack_packet = conn.create_ack_packet(2000).unwrap();
 
-        // パケット形式の基本チェック
-        assert!(ack_packet.len() >= 40);
+        // TCPヘッダーのサイズチェック（20バイト）
+        assert_eq!(ack_packet.len(), 20);
 
-        // IPヘッダーの確認
-        assert_eq!(ack_packet[0] >> 4, 4);
-        assert_eq!(ack_packet[9], 6); // TCP
+        // source port
+        assert_eq!(
+            u16::from_be_bytes([ack_packet[0], ack_packet[1]]),
+            conn.local_port
+        );
+        // dest port
+        assert_eq!(
+            u16::from_be_bytes([ack_packet[2], ack_packet[3]]),
+            conn.remote_port
+        );
+        // seq number (local_seq + 1 = 1001)
+        assert_eq!(
+            u32::from_be_bytes([ack_packet[4], ack_packet[5], ack_packet[6], ack_packet[7]]),
+            conn.local_seq + 1
+        );
+        // ack number
+        assert_eq!(
+            u32::from_be_bytes([ack_packet[8], ack_packet[9], ack_packet[10], ack_packet[11]]),
+            2000
+        );
 
-        // TCPヘッダーのACKフラグチェック
-        let ip_header_len = ((ack_packet[0] & 0x0F) * 4) as usize;
-        let tcp_flags = ack_packet[ip_header_len + 13];
+        // TCPフラグの確認
+        let tcp_flags = ack_packet[13];
         assert_eq!(tcp_flags & 0x10, 0x10); // ACKフラグ
         assert_eq!(tcp_flags & 0x02, 0x00); // SYNフラグは未設定
-        */
     }
 
     // Task E2: ACK送信テスト

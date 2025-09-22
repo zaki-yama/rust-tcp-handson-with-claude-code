@@ -215,7 +215,24 @@ impl TcpConnection {
         // Task E1: ACKパケット構築
         // - ACKフラグ付きTCPヘッダー作成
         // - 正しいseq/ack番号設定
-        todo!("Task E1: ACKパケット構築を実装してください")
+
+        let mut header = TcpHeader::new(
+            self.local_port,
+            self.remote_port,
+            self.local_seq + 1, // SYN 送信後なので+1
+            ack_number,
+            tcp_flags::ACK, // ACKフラグ
+            8192,           // ウィンドウサイズ
+        );
+
+        // チェックサム計算
+        header.calculate_checksum(
+            u32::from(self.local_ip),
+            u32::from(self.remote_ip),
+            &[], // データなし
+        );
+
+        Ok(header.to_bytes())
     }
 
     fn complete_handshake(&mut self) {
