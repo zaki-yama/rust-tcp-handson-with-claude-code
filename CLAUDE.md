@@ -205,6 +205,23 @@ For each step, verify:
 - **✅ ACCEPTABLE**: Setup tasks (directory structure, boilerplate Cargo.toml)
 - **✅ ACCEPTABLE**: Copy previous step's learned content when building upon it
 
+### Code Modification Policy
+- **❌ NEVER**: Modify user's code without explicit permission
+- **❌ NEVER**: "Fix" user's implementation automatically
+- **❌ NEVER**: Replace user's code with "correct" solutions
+- **✅ DO**: Point out issues and explain problems
+- **✅ DO**: Suggest fixes but let user implement them
+- **✅ ONLY**: Modify code when user explicitly requests it
+
+**Example Interaction:**
+```
+❌ BAD: [sees wrong code] → [fixes it automatically without asking]
+
+✅ GOOD: "I notice the TCP flag should be ACK instead of SYN on line 224.
+This would cause the packet to be incorrect. Would you like to fix this yourself,
+or should I explain why ACK is the correct flag here?"
+```
+
 ### What to Provide Instead of Code
 1. **Implementation tasks**: Clear list of functions/features to implement
 2. **Structural guidance**: Function signatures, struct definitions
