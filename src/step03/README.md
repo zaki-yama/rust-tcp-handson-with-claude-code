@@ -32,7 +32,7 @@ TCP接続確立の基本プロセス（3-way handshake）を実装し、実際�
 ### Phase E: ACKパケット送信と接続完了 (45分)
 - [x] **Task E1**: SYN-ACK受信後のACKパケット構築
 - [x] **Task E2**: ACKパケット送信機能を実装
-- [ ] **Task E3**: 状態をSYN-SENT→ESTABLISHEDに変更
+- [x] **Task E3**: 状態をSYN-SENT→ESTABLISHEDに変更
 - [ ] **Task E4**: 接続確立完了の確認機能
 
 ### Phase F: 統合テストと動作確認 (45分)
