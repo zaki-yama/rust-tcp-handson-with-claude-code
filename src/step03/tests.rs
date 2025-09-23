@@ -351,9 +351,8 @@ mod phase_e_tests {
 
     // Task E2: ACK送信テスト
     #[test]
-    fn test_ack_sending() {
+    fn test_send_ack() {
         // send_ack実装後に有効化
-        /*
         let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
         conn.local_seq = 1000;
@@ -363,7 +362,17 @@ mod phase_e_tests {
 
         // リモートシーケンス番号が更新されている
         assert_eq!(conn.remote_seq, 2000); // ack_number - 1
-        */
+
+        assert_eq!(
+            conn.local_seq, 1000,
+            "local_seq should not change during ACK sending"
+        );
+
+        assert_eq!(
+            conn.state,
+            TcpState::Closed,
+            "state should not change in send_ack"
+        );
     }
 
     // Task E3: 接続確立完了テスト

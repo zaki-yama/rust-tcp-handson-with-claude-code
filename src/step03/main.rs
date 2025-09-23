@@ -205,10 +205,13 @@ impl TcpConnection {
 
     fn send_ack(&mut self, ack_number: u32) -> Result<(), Box<dyn std::error::Error>> {
         // Task E2: ACK送信
-        // - ACKパケット作成
-        // - 送信
-        // - 状態管理
-        todo!("Task E2: ACK送信機能を実装してください")
+        let ack_packet = self.create_ack_packet(ack_number)?;
+        self.send_tcp_packet(&ack_packet, &[])?;
+
+        self.remote_seq = ack_number - 1;
+
+        println!("ACK sent: seq={}, ack={}", self.local_seq + 1, ack_number);
+        Ok(())
     }
 
     fn create_ack_packet(&self, ack_number: u32) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
