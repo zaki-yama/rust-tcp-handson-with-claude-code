@@ -241,8 +241,9 @@ impl TcpConnection {
     fn complete_handshake(&mut self) {
         // Task E3: 接続確立完了
         // - 状態をESTABLISHEDに変更
+        self.state = TcpState::Established;
         // - シーケンス番号更新
-        todo!("Task E3: 接続確立完了処理を実装してください")
+        self.local_seq += 1;
     }
 
     fn is_connected(&self) -> bool {

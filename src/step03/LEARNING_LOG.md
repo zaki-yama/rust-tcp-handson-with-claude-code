@@ -373,3 +373,137 @@ fn receive_packet_timeout(&self, timeout_secs: u64) -> Result<Vec<u8>, Box<dyn s
 ブロッキング版だと、SYN-ACKが来ない場合にプログラムが永久に止まってしまいます。
 
 ノンブロッキング版なら、10ms毎にパケットをチェックしつつ、5秒経ったらタイムアウトできます。
+
+## [TCP シーケンス番号管理について]
+
+### 質問内容
+
+どうしてcomplete_handshake関数内でシーケンス番号を+1するのですか？
+ACK送信時に+1するのではだめですか？
+
+### 回答
+
+#### なぜ complete_handshake() で local_seq += 1 するのか
+
+**TCP でのシーケンス番号消費ルール**：
+
+TCPでは、以下の場合にシーケンス番号が消費（+1）されます：
+
+1. **SYNフラグ**: 1バイト分のシーケンス番号を消費
+2. **FINフラグ**: 1バイト分のシーケンス番号を消費
+3. **データ**: データのバイト数分を消費
+4. **ACKのみ**: シーケンス番号は消費しない
+
+**3-way handshake での流れ**：
+
+```
+Client                           Server
+CLOSED                           LISTEN
+  |                                |
+  | SYN seq=1000 ------------>     |  ← クライアントがSYNを送信
+  |                               |
+SYN-SENT                          |
+  |                              |
+  | <---------- SYN-ACK seq=2000, ack=1001  ← サーバーがSYN-ACKを返す
+  |                               |
+  | ACK seq=1001, ack=2001 --->   |  ← クライアントがACKを送信
+  |                               |
+ESTABLISHED                   ESTABLISHED
+```
+
+**なぜ complete_handshake() で +1 するのか**：
+
+1. **SYN送信時**: `local_seq = 1000` (ISN)
+2. **SYN送信後**: SYNフラグが1バイト消費 → 次のseq番号は`1001`になるべき
+3. **ACK送信時**: `seq = local_seq + 1 = 1001` で送信
+4. **接続確立後**: `local_seq`を実際の現在値`1001`に更新
+
+**具体例での理解**：
+
+```rust
+// SYN送信前
+self.local_seq = 1000;
+
+// SYN送信（create_syn_packet内）
+// seq = 1000 で送信
+
+// ACK送信（create_ack_packet内）
+// seq = self.local_seq + 1 = 1001 で送信
+
+// 接続確立完了時
+self.local_seq += 1;  // 1000 → 1001
+// これで次回のデータ送信時は seq=1001 から開始
+```
+
+**重要なポイント**：
+SYNフラグは論理的に1バイトのデータとして扱われるため、送信後はシーケンス番号を1つ進める必要があります。これにより、後続のデータ送信で正しいシーケンス番号が使用されます。
+
+#### ACK送信時に+1する案の検討
+
+**現在の実装パターン**：
+```rust
+// send_ack() - ACK送信時
+fn create_ack_packet(&self, ack_number: u32) -> ... {
+    TcpHeader::new(
+        self.local_port,
+        self.remote_port,
+        self.local_seq + 1,  // ← ここで+1して送信
+        ack_number,
+        tcp_flags::ACK,
+        8192,
+    );
+}
+
+// complete_handshake() - 接続確立時
+fn complete_handshake(&mut self) {
+    self.state = TcpState::Established;
+    self.local_seq += 1;  // ← ここで実際の値を更新
+}
+```
+
+**代替案：ACK送信時に更新**：
+```rust
+// send_ack() - ACK送信時に更新
+fn send_ack(&mut self, ack_number: u32) -> ... {
+    self.local_seq += 1;  // ← ここで更新
+    let ack_packet = self.create_ack_packet(ack_number)?;
+    // ...
+}
+
+fn create_ack_packet(&self, ack_number: u32) -> ... {
+    TcpHeader::new(
+        self.local_port,
+        self.remote_port,
+        self.local_seq,  // ← 既に更新済みの値を使用
+        ack_number,
+        tcp_flags::ACK,
+        8192,
+    );
+}
+```
+
+**現在の実装の方が良い理由**：
+
+1. **責任の分離**
+   - `send_ack()`: パケット送信の責任
+   - `complete_handshake()`: 状態管理の責任
+
+2. **再利用性**
+   - `create_ack_packet()`が`local_seq`を変更しないので、テストしやすい
+   - 複数回呼び出しても副作用がない
+
+3. **タイミングの明確性**
+   - 3-way handshake **完了時点** でシーケンス番号を確定
+   - パケット送信と状態更新を分離
+
+4. **RFC準拠**
+   - TCPの状態遷移とシーケンス番号管理を明確に分離
+
+**結論**：
+現在の実装（`complete_handshake()`で更新）が推奨です。なぜなら：
+
+- シーケンス番号の更新は「接続確立完了」という状態変化の一部
+- パケット送信機能は副作用を持たない方が安全
+- テストや再利用が容易
+
+ただし、ACK送信時に更新する案も技術的には正しく、設計思想の違いと言えます。
