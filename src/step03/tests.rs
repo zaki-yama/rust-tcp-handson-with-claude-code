@@ -421,44 +421,33 @@ mod phase_f_tests {
 
     // Task F1: 完全handshakeテスト
     #[test]
-    #[ignore] // ネットワーク接続が必要
     fn test_complete_handshake() {
         // connect実装後に有効化
-        /*
         let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
         let mut conn = TcpConnection::new(remote_ip, 8080).unwrap();
 
         // 3-way handshake実行
         let result = conn.connect(5);
-
-        // 成功時の確認（netcatが起動していれば）
-        if result.is_ok() {
-            assert_eq!(conn.state, TcpState::Established);
-            assert!(conn.is_connected());
-            assert_ne!(conn.local_seq, 0);
-            assert_ne!(conn.remote_seq, 0);
-        }
-        */
+        assert!(result.is_ok(), "Connection should succeed: {:?}", result);
+        assert_eq!(conn.state, TcpState::Established);
+        assert!(conn.is_connected());
+        assert_ne!(conn.local_seq, 0);
+        assert_ne!(conn.remote_seq, 0);
     }
 
     // Task F2: 実サーバーテスト
     #[test]
-    #[ignore] // 外部ネットワーク接続が必要
     fn test_real_server_connection() {
-        /*
         // httpbin.org など公開サーバーとのテスト
-        let remote_ip = Ipv4Addr::new(54, 92, 72, 139); // httpbin.org example IP
+        let remote_ip = Ipv4Addr::new(23, 215, 0, 136); // httpbin.org example IP
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         let start = Instant::now();
         let result = conn.connect(10);
         let elapsed = start.elapsed();
 
-        if result.is_ok() {
-            assert!(conn.is_connected());
-            assert!(elapsed < Duration::from_secs(5));
-        }
-        */
+        assert!(result.is_ok(), "Connection should succeed: {:?}", result);
+        assert_eq!(conn.state, TcpState::Established);
     }
 
     // Task F3: Wiresharkキャプチャ用テスト

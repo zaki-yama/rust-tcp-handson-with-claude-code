@@ -1,10 +1,11 @@
+use std::fmt::format;
 use std::net::Ipv4Addr;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use log::info;
 // Step01とStep02の実装を共通ライブラリから使用
 use rust_tcp_handson_with_claude_code::step01::{
-    create_raw_socket, get_local_ip, send_packet, IpHeader, IP_HEADER_SIZE, IP_PROTOCOL_TCP,
+    create_raw_socket, get_local_ip, IpHeader, IP_HEADER_SIZE, IP_PROTOCOL_TCP,
 };
 use rust_tcp_handson_with_claude_code::step02::{
     calculate_checksum_rfc1071, tcp_flags, TcpHeader, TCP_HEADER_SIZE,
@@ -55,10 +56,44 @@ impl TcpConnection {
     fn connect(&mut self, timeout_secs: u64) -> Result<(), Box<dyn std::error::Error>> {
         // Task F1: 完全な3-way handshakeの実装
         // 1. SYN送信
+        self.send_syn()?;
         // 2. SYN-ACK受信・検証
+        let received_data = self.receive_packet_timeout(timeout_secs)?;
+        let tcp_header = self.parse_received_packet(&received_data)?;
+
+        if !self.is_correct_syn_ack(&tcp_header) {
+            // 受信したフラグの詳細
+            let flags = tcp_header.get_flags();
+            let flag_str = format!(
+                "SYN:{} ACK:{} RST:{} FIN:{}",
+                (flags & tcp_flags::SYN) != 0,
+                (flags & tcp_flags::ACK) != 0,
+                (flags & tcp_flags::RST) != 0,
+                (flags & tcp_flags::FIN) != 0
+            );
+
+            // 期待値vs実際値
+            let expected_ack = self.local_seq + 1;
+            let actual_ack = tcp_header.get_ack_number();
+
+            // デバッグメッセージ
+            return Err(format!(
+                "Invalid SYN-ACK: flags=[{}], expected_ack={}, actual_ack={}, src_port={}, dst_port={}",
+                flag_str,
+                expected_ack,
+                actual_ack,
+                tcp_header.get_source_port(),
+                tcp_header.get_destination_port()
+            ).into());
+        }
+
         // 3. ACK送信
+        let ack_number = tcp_header.get_sequence_number() + 1;
+        self.send_ack(ack_number)?;
+
         // 4. 接続完了
-        todo!("Task F1: 3-way handshake全体の流れを実装してください")
+        self.complete_handshake();
+        Ok(())
     }
 
     fn send_tcp_packet(
@@ -141,20 +176,39 @@ impl TcpConnection {
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let start = Instant::now();
         let timeout = Duration::from_secs(timeout_secs);
+        let mut attempt_count = 0;
 
         loop {
+            attempt_count += 1;
             // ノンブロッキング受信を試行
             match self.try_receive_packet() {
-                Ok(data) => return Ok(data),
-                Err(_) => {
+                Ok(data) => {
+                    println!(
+                        "Successfully received packet after {} attempts",
+                        attempt_count
+                    );
+                    return Ok(data);
+                }
+                Err(e) => {
+                    // 10秒ごとに進捗を表示
+                    if attempt_count % 1000 == 0 {
+                        println!(
+                            "Attempt {}: {}, elapsed: {:?}",
+                            attempt_count,
+                            e,
+                            start.elapsed()
+                        );
+                    }
+
                     if start.elapsed() > timeout {
-                        return Err("Timeout".into());
+                        return Err(format!("Timeout after {} attempts", attempt_count).into());
                     }
                     std::thread::sleep(Duration::from_millis(10));
                 }
             }
         }
     }
+
 
     fn parse_received_packet(&self, data: &[u8]) -> Result<TcpHeader, Box<dyn std::error::Error>> {
         // Task D2: 受信パケット解析
@@ -291,7 +345,11 @@ impl TcpConnection {
             // ノンブロッキングで利用可能なデータがない場合
             if errno == libc::EAGAIN || errno == libc::EWOULDBLOCK {
                 info!("Received {} bytes", bytes_received);
-                return Err("No data available".into());
+                return Err(format!(
+                    "No data available (waiting for TCP to {}:{}",
+                    self.remote_ip, self.remote_port,
+                )
+                .into());
             }
             return Err(format!("Failed to receive packet: errno {}", errno).into());
         }
@@ -299,7 +357,28 @@ impl TcpConnection {
         if bytes_received < IP_HEADER_SIZE as isize {
             return Err("Received packet too short for IP header".into());
         }
+        // 受信したパケットの詳細をログ出力
+        if bytes_received >= IP_HEADER_SIZE as isize {
+            let protocol = buffer[9];
+            println!(
+                "Received packet: {} bytes, protocol={}",
+                bytes_received, protocol
+            );
 
+            if protocol == IP_PROTOCOL_TCP && bytes_received >= 40 {
+                // TCPヘッダーの基本情報を表示
+                let ip_header_len = ((buffer[0] & 0x0F) * 4) as usize;
+                if bytes_received as usize >= ip_header_len + 20 {
+                    let tcp_data = &buffer[ip_header_len..];
+                    let src_port = u16::from_be_bytes([tcp_data[0], tcp_data[1]]);
+                    let dst_port = u16::from_be_bytes([tcp_data[2], tcp_data[3]]);
+                    println!(
+                        "TCP packet: {}:{} -> {}:{}",
+                        self.remote_ip, src_port, self.local_ip, dst_port
+                    );
+                }
+            }
+        }
         info!("Received {} bytes", bytes_received);
 
         // 受信したパケット全体を返す

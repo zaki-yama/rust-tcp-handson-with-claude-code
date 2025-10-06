@@ -157,6 +157,10 @@ impl TcpHeader {
     pub fn get_ack_number(&self) -> u32 {
         self.acknowledgment_number
     }
+
+    pub fn get_sequence_number(&self) -> u32 {
+        self.sequence_number
+    }
 }
 
 /// 1の補数和を計算（キャリー処理まで、補数演算なし）
