@@ -11,6 +11,17 @@ use rust_tcp_handson_with_claude_code::step02::{
     calculate_checksum_rfc1071, tcp_flags, TcpHeader, TCP_HEADER_SIZE,
 };
 
+// クロスプラットフォーム対応: errnoを取得
+#[cfg(target_os = "linux")]
+fn get_errno() -> i32 {
+    unsafe { *libc::__errno_location() }
+}
+
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "freebsd"))]
+fn get_errno() -> i32 {
+    unsafe { *libc::__error() }
+}
+
 // Raw socketの基本機能（Step1から再利用）
 // 実装時にStep1のコードを参考にしてください
 
@@ -113,8 +124,7 @@ impl TcpConnection {
         packet.extend_from_slice(data);
 
         let dest_sockaddr = libc::sockaddr_in {
-            sin_len: std::mem::size_of::<libc::sockaddr_in>() as u8,
-            sin_family: libc::AF_INET as u8,
+            sin_family: libc::AF_INET as libc::sa_family_t,
             sin_port: 0,
             sin_addr: libc::in_addr {
                 s_addr: u32::from(self.remote_ip), // Ipv4Addr -> u32（ネットワークバイトオーダー）
@@ -133,12 +143,11 @@ impl TcpConnection {
             )
         };
         if result < 0 {
-            let errno = unsafe { *libc::__error() };
+            let errno = get_errno();
             return Err(format!("Failed to send packet: errno {}", errno).into());
         }
         Ok(())
     }
-
 
     /// Task C2: SYN送信機能
     fn send_syn(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -208,7 +217,6 @@ impl TcpConnection {
             }
         }
     }
-
 
     fn parse_received_packet(&self, data: &[u8]) -> Result<TcpHeader, Box<dyn std::error::Error>> {
         // Task D2: 受信パケット解析
@@ -340,7 +348,7 @@ impl TcpConnection {
         };
 
         if bytes_received < 0 {
-            let errno = unsafe { *libc::__error() };
+            let errno = get_errno();
 
             // ノンブロッキングで利用可能なデータがない場合
             if errno == libc::EAGAIN || errno == libc::EWOULDBLOCK {

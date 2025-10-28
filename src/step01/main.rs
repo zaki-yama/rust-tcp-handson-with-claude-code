@@ -6,6 +6,17 @@ use std::{error::Error, net::Ipv4Addr};
 pub const IP_HEADER_SIZE: usize = 20;
 pub const IP_PROTOCOL_TCP: u8 = 6;
 
+// クロスプラットフォーム対応: errnoを取得
+#[cfg(target_os = "linux")]
+fn get_errno() -> i32 {
+    unsafe { *libc::__errno_location() }
+}
+
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "freebsd"))]
+fn get_errno() -> i32 {
+    unsafe { *libc::__error() }
+}
+
 // ローカルIPアドレスを取得する関数
 pub fn get_local_ip() -> Option<Ipv4Addr> {
     use std::net::UdpSocket;
@@ -96,7 +107,6 @@ impl IpHeader {
             destination: u32::from(dest), // 宛先IP
         }
     }
-
 
     /// IPヘッダーをバイト配列に変換（macOS raw socket用）
     ///
@@ -245,9 +255,9 @@ pub fn send_packet(
 
     // 4. sendto()で送信
     let dest_sockaddr = libc::sockaddr_in {
-        sin_len: std::mem::size_of::<libc::sockaddr_in>() as u8, // macOSで必要
-        sin_family: libc::AF_INET as u8,                         // IPv4を指定
-        sin_port: 0,                                             // raw socket なのでポート不要
+        // sin_len: std::mem::size_of::<libc::sockaddr_in>() as u8, // macOSで必要
+        sin_family: libc::AF_INET as libc::sa_family_t, // IPv4を指定
+        sin_port: 0,                                    // raw socket なのでポート不要
         sin_addr: libc::in_addr {
             s_addr: u32::from(dest), // 宛先IPをネットワークバイトオーダーで
         },
@@ -272,7 +282,7 @@ pub fn send_packet(
     };
 
     if result < 0 {
-        let errno = unsafe { *libc::__error() };
+        let errno = get_errno();
         return Err(format!("Failed to send packet: errno {}", errno).into());
     }
     Ok(())
@@ -329,7 +339,7 @@ fn receive_packet(socket_fd: i32) -> Result<Vec<u8>, Box<dyn Error>> {
     };
 
     if bytes_received < 0 {
-        let errno = unsafe { *libc::__error() };
+        let errno = get_errno();
         return Err(format!("Failed to receive packet: errno {}", errno).into());
     }
 
@@ -435,7 +445,7 @@ fn receiver_mode() -> Result<(), Box<dyn Error>> {
             info!("Packet processed successfully");
         }
         Err(e) => {
-            let errno = unsafe { *libc::__error() };
+            let errno = get_errno();
             if errno == 35 || errno == 60 {
                 // EAGAIN/EWOULDBLOCK or ETIMEDOUT
                 info!("No packets received within timeout period");
