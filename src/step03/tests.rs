@@ -423,8 +423,8 @@ mod phase_f_tests {
     #[test]
     fn test_complete_handshake() {
         // connect実装後に有効化
-        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
-        let mut conn = TcpConnection::new(remote_ip, 8080).unwrap();
+        let remote_ip = Ipv4Addr::new(10, 0, 1, 1);
+        let mut conn = TcpConnection::new(remote_ip, 40000).unwrap();
 
         // 3-way handshake実行
         let result = conn.connect(5);
