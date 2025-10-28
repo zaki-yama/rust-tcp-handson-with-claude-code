@@ -99,11 +99,11 @@ impl IpHeader {
             tos: 0,                       // サービスタイプ
             length: total_length,         // 全長（ホストバイトオーダー）
             id: 0,                        // ID（カーネルが設定）
-            flags_fragment: 0x4000,       // Don't Fragment（ホストバイトオーダー）
-            ttl: 64,                      // Time To Live
-            protocol: IP_PROTOCOL_TCP,    // TCP
-            checksum: 0,                  // チェックサム（カーネルが計算）
-            source: u32::from(source),    // 送信元IP
+            flags_fragment: 0x0040, // Don't Fragment（リトルエンディアン環境用: to_ne_bytes()で0x4000になる）
+            ttl: 64,                // Time To Live
+            protocol: IP_PROTOCOL_TCP, // TCP
+            checksum: 0,            // チェックサム（カーネルが計算）
+            source: u32::from(source), // 送信元IP
             destination: u32::from(dest), // 宛先IP
         }
     }
