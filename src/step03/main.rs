@@ -50,6 +50,7 @@ impl TcpConnection {
         let socket_fd = create_raw_socket()?;
 
         let local_ip = get_local_ip().unwrap();
+        println!("local_ip: {}", local_ip);
         let local_port = Self::choose_local_port();
 
         Ok(Self {

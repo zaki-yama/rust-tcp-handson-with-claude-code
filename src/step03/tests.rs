@@ -437,9 +437,10 @@ mod phase_f_tests {
 
     // Task F2: 実サーバーテスト
     #[test]
+    #[ignore]
     fn test_real_server_connection() {
         // httpbin.org など公開サーバーとのテスト
-        let remote_ip = Ipv4Addr::new(23, 215, 0, 136); // httpbin.org example IP
+        let remote_ip = Ipv4Addr::new(34, 232, 178, 185); // httpbin.org example IP
         let mut conn = TcpConnection::new(remote_ip, 80).unwrap();
 
         let start = Instant::now();
@@ -481,7 +482,6 @@ mod phase_f_tests {
     #[test]
     fn test_connection_timeout() {
         // 到達不可能なアドレスでタイムアウトテスト
-        /*
         let remote_ip = Ipv4Addr::new(192, 168, 255, 254);
         let mut conn = TcpConnection::new(remote_ip, 12345).unwrap();
 
@@ -491,30 +491,26 @@ mod phase_f_tests {
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("timeout") || error_msg.contains("Timeout"));
+        assert!(error_msg.starts_with("Timeout after"));
 
         assert!(elapsed >= Duration::from_secs(2));
         assert!(elapsed < Duration::from_secs(4));
         assert_ne!(conn.state, TcpState::Established);
-        */
     }
 
     #[test]
     fn test_connection_refused() {
         // 接続拒否テスト
-        /*
-        let remote_ip = Ipv4Addr::new(127, 0, 0, 1);
+        let remote_ip = Ipv4Addr::new(10, 0, 1, 1);
         let mut conn = TcpConnection::new(remote_ip, 65432).unwrap(); // 未使用ポート
 
         let result = conn.connect(2);
 
         if result.is_err() {
             let error = result.unwrap_err().to_string();
-            assert!(error.contains("timeout") ||
-                   error.contains("refused") ||
-                   error.contains("Timeout"));
+            // 到達不可能または接続拒否の場合、タイムアウトエラーになる
+            assert!(error.starts_with("Timeout after"));
         }
-        */
     }
 }
 
