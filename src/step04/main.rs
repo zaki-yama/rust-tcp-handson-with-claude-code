@@ -45,20 +45,21 @@ pub enum TcpEvent {
 
 // Task A3: StateMachineの基本構造
 pub struct TcpStateMachine {
-    // TODO: 必要なフィールドを定義
-    // - current_state: 現在の状態
-    // - state_history: 状態遷移履歴（デバッグ用）
+    current_state: TcpState,
+    // 状態遷移履歴（デバッグ用）
+    state_history: Vec<(TcpState, TcpState, TcpEvent)>,
 }
 
 impl TcpStateMachine {
     pub fn new() -> Self {
-        // TODO: Closed状態で初期化
-        todo!()
+        Self {
+            current_state: TcpState::Closed,
+            state_history: vec![],
+        }
     }
 
     pub fn current_state(&self) -> TcpState {
-        // TODO: 現在の状態を返す
-        todo!()
+        self.current_state
     }
 }
 
