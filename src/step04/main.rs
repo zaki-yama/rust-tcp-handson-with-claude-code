@@ -1,0 +1,233 @@
+// Step 4: TCP State Machine Implementation
+//
+// このステップでは、TCP状態マシンの完全な実装を行います。
+// RFC 9293 Section 3.2, Figure 6 の状態遷移図に基づいて実装してください。
+
+use std::fmt;
+
+// =============================================================================
+// Phase A: TCP状態の定義
+// =============================================================================
+
+// Task A1: TcpState列挙型の定義
+// RFC 9293で定義されている11種類のTCP状態を実装してください
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TcpState {
+    // TODO: 11種類の状態を定義
+    // Closed, Listen, SynSent, SynReceived, Established,
+    // FinWait1, FinWait2, CloseWait, Closing, LastAck, TimeWait
+}
+
+// Task A2: TcpEvent列挙型の定義
+// 状態遷移のトリガーとなるイベントを定義してください
+#[derive(Debug, Clone, PartialEq)]
+pub enum TcpEvent {
+    // TODO: イベントを定義
+    // Connect, Listen, ReceiveSyn, ReceiveSynAck, ReceiveAck,
+    // ReceiveFin, ReceiveRst, Close, Timeout
+}
+
+// Task A3: StateMachineの基本構造
+pub struct TcpStateMachine {
+    // TODO: 必要なフィールドを定義
+    // - current_state: 現在の状態
+    // - state_history: 状態遷移履歴（デバッグ用）
+}
+
+impl TcpStateMachine {
+    pub fn new() -> Self {
+        // TODO: Closed状態で初期化
+        todo!()
+    }
+
+    pub fn current_state(&self) -> TcpState {
+        // TODO: 現在の状態を返す
+        todo!()
+    }
+}
+
+// =============================================================================
+// Phase B: 状態遷移ロジック
+// =============================================================================
+
+impl TcpStateMachine {
+    // Task B1: 状態遷移メソッドの実装
+    pub fn transition(&mut self, event: TcpEvent) -> Result<TcpState, String> {
+        // TODO: 状態遷移を実行
+        // 1. 現在の状態とイベントから次の状態を決定
+        // 2. 状態を更新
+        // 3. 履歴に記録
+        // 4. 新しい状態を返す
+        todo!()
+    }
+
+    // Task B2: 状態遷移テーブルの実装
+    fn next_state(&self, current: TcpState, event: TcpEvent) -> Result<TcpState, String> {
+        // TODO: RFC 9293 Figure 6 に基づいて状態遷移を実装
+        // match (current, event) { ... }
+        // 不正な遷移はエラーを返す
+        todo!()
+    }
+
+    // Task B3: 状態確認メソッド
+    pub fn is_established(&self) -> bool {
+        // TODO: Established状態かチェック
+        todo!()
+    }
+
+    pub fn is_closed(&self) -> bool {
+        // TODO: Closed状態かチェック
+        todo!()
+    }
+
+    pub fn can_send_data(&self) -> bool {
+        // TODO: データ送信可能な状態かチェック
+        // (Established または CloseWait)
+        todo!()
+    }
+
+    pub fn can_receive_data(&self) -> bool {
+        // TODO: データ受信可能な状態かチェック
+        // (Established, FinWait1, FinWait2)
+        todo!()
+    }
+}
+
+// =============================================================================
+// Phase C: 接続確立時の状態管理
+// =============================================================================
+
+impl TcpStateMachine {
+    // Task C1: アクティブオープンの実装
+    // クライアント側: Closed → SynSent → Established
+    pub fn active_open(&mut self) -> Result<(), String> {
+        // TODO: Connect イベントで Closed → SynSent
+        todo!()
+    }
+
+    pub fn complete_active_open(&mut self) -> Result<(), String> {
+        // TODO: SYN-ACK受信で SynSent → Established
+        todo!()
+    }
+
+    // Task C2: パッシブオープンの実装
+    // サーバー側: Closed → Listen → SynReceived → Established
+    pub fn passive_open(&mut self) -> Result<(), String> {
+        // TODO: Listen イベントで Closed → Listen
+        todo!()
+    }
+
+    pub fn accept_connection(&mut self) -> Result<(), String> {
+        // TODO: SYN受信で Listen → SynReceived
+        // TODO: ACK受信で SynReceived → Established
+        todo!()
+    }
+
+    // Task C3: 同時オープンの処理
+    // SynSent → SynReceived → Established
+    pub fn simultaneous_open(&mut self) -> Result<(), String> {
+        // TODO: SynSent状態でSYN受信 → SynReceived → Established
+        todo!()
+    }
+}
+
+// =============================================================================
+// Phase D: 接続終了時の状態管理
+// =============================================================================
+
+impl TcpStateMachine {
+    // Task D1: アクティブクローズの実装
+    // Established → FinWait1 → FinWait2 → TimeWait → Closed
+    pub fn active_close(&mut self) -> Result<(), String> {
+        // TODO: FIN送信して終了シーケンスを開始
+        todo!()
+    }
+
+    // Task D2: パッシブクローズの実装
+    // Established → CloseWait → LastAck → Closed
+    pub fn passive_close(&mut self) -> Result<(), String> {
+        // TODO: FIN受信後の処理
+        todo!()
+    }
+
+    // Task D3: 同時クローズの処理
+    // Established → FinWait1 → Closing → TimeWait → Closed
+    pub fn simultaneous_close(&mut self) -> Result<(), String> {
+        // TODO: 両方がFINを送信するケース
+        todo!()
+    }
+}
+
+// =============================================================================
+// Phase E: エラーハンドリングと異常系
+// =============================================================================
+
+impl TcpStateMachine {
+    // Task E1: RSTパケット処理
+    pub fn handle_reset(&mut self) -> Result<(), String> {
+        // TODO: 任意の状態からClosedへ即座に遷移
+        todo!()
+    }
+
+    // Task E2: タイムアウト処理
+    pub fn handle_timeout(&mut self) -> Result<(), String> {
+        // TODO: 状態に応じたタイムアウト処理
+        // - SynSent/SynReceived: Closedへ
+        // - TimeWait: 2MSL後にClosedへ
+        todo!()
+    }
+
+    // Task E3: 不正遷移の検出とログ
+    pub fn get_state_history(&self) -> &[(TcpState, TcpState, TcpEvent)] {
+        // TODO: 状態遷移履歴を返す
+        todo!()
+    }
+
+    pub fn print_state_diagram(&self) {
+        // TODO: 状態遷移履歴を見やすく表示
+        // 形式: "1. Closed --[Connect]--> SynSent"
+        todo!()
+    }
+}
+
+// =============================================================================
+// Display実装（デバッグ用）
+// =============================================================================
+
+impl fmt::Display for TcpState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl fmt::Display for TcpEvent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+// =============================================================================
+// デモ用main関数
+// =============================================================================
+
+fn main() {
+    println!("Step 4: TCP State Machine Implementation");
+    println!("=========================================");
+    println!();
+    println!("このステップでは、TCP状態マシンを実装します。");
+    println!("RFC 9293 Figure 6 の状態遷移図を参照してください。");
+    println!();
+    println!("実装後、以下のコマンドでテストを実行してください:");
+    println!("  cargo test --bin step04");
+    println!();
+    println!("各フェーズのTDD実行手順:");
+    println!("  1. cargo test phase_a_tests");
+    println!("  2. cargo test phase_b_tests");
+    println!("  3. cargo test phase_c_tests");
+    println!("  4. cargo test phase_d_tests");
+    println!("  5. cargo test phase_e_tests");
+    println!("  6. cargo test phase_f_tests");
+}
+
+#[cfg(test)]
+mod tests;

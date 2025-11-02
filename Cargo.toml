@@ -23,3 +23,7 @@ path = "src/step02/main.rs"
 [[bin]]
 name = "step03"
 path = "src/step03/main.rs"
+
+[[bin]]
+name = "step04"
+path = "src/step04/main.rs"
