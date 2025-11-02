@@ -168,7 +168,7 @@ mod phase_b_tests {
     #[test]
     fn test_state_transition_table() {
         // 複数の遷移をテスト
-        let test_cases = vec![
+        let test_cases: Vec<(TcpState, TcpEvent, Result<TcpState, String>)> = vec![
             (TcpState::Closed, TcpEvent::Connect, Ok(TcpState::SynSent)),
             (TcpState::Closed, TcpEvent::Listen, Ok(TcpState::Listen)),
             (

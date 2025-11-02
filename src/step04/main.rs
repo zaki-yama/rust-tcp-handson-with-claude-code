@@ -32,9 +32,15 @@ pub enum TcpState {
 // 状態遷移のトリガーとなるイベントを定義してください
 #[derive(Debug, Clone, PartialEq)]
 pub enum TcpEvent {
-    // TODO: イベントを定義
-    // Connect, Listen, ReceiveSyn, ReceiveSynAck, ReceiveAck,
-    // ReceiveFin, ReceiveRst, Close, Timeout
+    Connect,       // アプリケーションからの接続要求
+    Listen,        // アプリケーションからの待ち受け要求
+    ReceiveSyn,    // SYNパケット受信
+    ReceiveSynAck, // SYN-ACKパケット受信
+    ReceiveAck,    // ACKパケット受信
+    ReceiveFin,    // FINパケット受信
+    ReceiveRst,    // RSTパケット受信
+    Close,         // アプリケーションからの切断要求
+    Timeout,       // タイムアウト
 }
 
 // Task A3: StateMachineの基本構造
