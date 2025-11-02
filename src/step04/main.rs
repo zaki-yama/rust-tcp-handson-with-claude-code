@@ -1,7 +1,8 @@
 // Step 4: TCP State Machine Implementation
 //
 // このステップでは、TCP状態マシンの完全な実装を行います。
-// RFC 9293 Section 3.2, Figure 6 の状態遷移図に基づいて実装してください。
+// RFC 9293 Section 3.3.2 (State Machine Overview), Figure 5 (TCP Connection State Diagram)
+// の状態遷移図に基づいて実装してください。
 
 use std::fmt;
 
@@ -11,11 +12,20 @@ use std::fmt;
 
 // Task A1: TcpState列挙型の定義
 // RFC 9293で定義されている11種類のTCP状態を実装してください
+/// ref. RFC 9293 3.3.2. State Machine Overview
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TcpState {
-    // TODO: 11種類の状態を定義
-    // Closed, Listen, SynSent, SynReceived, Established,
-    // FinWait1, FinWait2, CloseWait, Closing, LastAck, TimeWait
+    Listen,
+    SynSent,
+    SynReceived,
+    Established,
+    FinWait1,
+    FinWait2,
+    CloseWait,
+    Closing,
+    LastAck,
+    TimeWait,
+    Closed,
 }
 
 // Task A2: TcpEvent列挙型の定義
@@ -63,7 +73,7 @@ impl TcpStateMachine {
 
     // Task B2: 状態遷移テーブルの実装
     fn next_state(&self, current: TcpState, event: TcpEvent) -> Result<TcpState, String> {
-        // TODO: RFC 9293 Figure 6 に基づいて状態遷移を実装
+        // TODO: RFC 9293 Figure 5 に基づいて状態遷移を実装
         // match (current, event) { ... }
         // 不正な遷移はエラーを返す
         todo!()
@@ -215,7 +225,7 @@ fn main() {
     println!("=========================================");
     println!();
     println!("このステップでは、TCP状態マシンを実装します。");
-    println!("RFC 9293 Figure 6 の状態遷移図を参照してください。");
+    println!("RFC 9293 Section 3.3.2, Figure 5 の状態遷移図を参照してください。");
     println!();
     println!("実装後、以下のコマンドでテストを実行してください:");
     println!("  cargo test --bin step04");

@@ -98,7 +98,7 @@
 - イベント処理システム
 - 状態遷移図の実装
 
-**RFC参照**: RFC 9293 - Section 3.2, Figure 6 (State Diagram) (※RFC 793を2022年に更新)
+**RFC参照**: RFC 9293 - Section 3.3.2 (State Machine Overview), Figure 5 (TCP Connection State Diagram) (※RFC 793を2022年に更新)
 
 **成果物**:
 - 完全な状態マシン実装

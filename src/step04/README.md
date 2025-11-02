@@ -52,12 +52,12 @@ pub struct TcpConnection {
 
 ## RFC参照
 
-**RFC 9293 - Section 3.2, Figure 6 (State Diagram)**
+**RFC 9293 - Section 3.3.2 (State Machine Overview), Figure 5 (TCP Connection State Diagram)**
 - TCP状態遷移図の詳細
 - 各状態の定義と遷移条件
 - イベント処理とアクション
 
-https://www.rfc-editor.org/rfc/rfc9293.html#section-3.2
+https://www.rfc-editor.org/rfc/rfc9293.html#section-3.3.2
 
 ## 実装の流れ
 
@@ -106,7 +106,7 @@ pub enum TcpState {
 ```
 
 **実装ヒント**:
-- RFC 9293 Figure 6を参照
+- RFC 9293 Figure 5を参照
 - `#[derive(Debug, Clone, Copy, PartialEq, Eq)]`を付与
 - Step03では3状態のみでしたが、完全な11状態に拡張
 
@@ -207,7 +207,7 @@ fn next_state(&self, current: TcpState, event: TcpEvent) -> Result<TcpState, Str
 ```
 
 **実装ヒント**:
-- RFC 9293 Figure 6の状態遷移図を参照
+- RFC 9293 Figure 5の状態遷移図を参照
 - すべての有効な遷移パターンをカバー
 - 不正な遷移は明確なエラーメッセージを返す
 
@@ -530,14 +530,14 @@ RFC 9293の状態遷移図と実装が一致することを確認します。
 - [ ] Phase D: 接続終了時の状態管理を実装
 - [ ] Phase E: エラーハンドリングを実装
 - [ ] Phase F: すべてのテストがパス
-- [ ] RFC 9293 Figure 6との対応を確認
+- [ ] RFC 9293 Figure 5との対応を確認
 - [ ] 状態遷移履歴のデバッグ出力を確認
 
 ## 参考リソース
 
 - [RFC 9293 - Transmission Control Protocol](https://www.rfc-editor.org/rfc/rfc9293.html)
-- RFC 9293 Section 3.2: State Machine
-- RFC 9293 Figure 6: TCP State Diagram
+- RFC 9293 Section 3.3.2: State Machine Overview
+- RFC 9293 Figure 5: TCP Connection State Diagram
 
 ## 次のステップ
 
