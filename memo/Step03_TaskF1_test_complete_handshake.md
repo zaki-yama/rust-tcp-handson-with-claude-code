@@ -11,6 +11,18 @@ $ sudo ip netns exec host1 tcpdump -i any -n -v 'tcp'
 $ sudo ip netns exec host1 /workspaces/rust-tcp/target/debug/deps/step03-ea0032633cd6533a test_complete_handshake --nocapture
 ```
 
+### テストバイナリの特定方法
+
+```bash
+# 1. ビルド（変更があった場合のみ必要）
+cargo test --bin step03 --no-run
+
+# 2. バイナリパスを変数に保存
+TEST_BIN=$(find target/debug/deps -name 'step03-*' -type f -executable | grep -v "\.d$")
+
+# 3. 実行
+sudo ip netns exec host1 $TEST_BIN test_complete_handshake --nocapture
+```
 
 ## 結果
 
