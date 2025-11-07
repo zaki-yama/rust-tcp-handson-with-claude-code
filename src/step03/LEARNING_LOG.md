@@ -507,3 +507,112 @@ fn create_ack_packet(&self, ack_number: u32) -> ... {
 - テストや再利用が容易
 
 ただし、ACK送信時に更新する案も技術的には正しく、設計思想の違いと言えます。
+
+## [テストを繰り返すとTimeoutエラーになる問題]
+
+### 事象
+
+テストを何度か繰り返し実行していると、途中からパケットの受信に失敗し、Timeoutエラーが発生する。
+
+**tcpdumpのログから見た挙動**：
+- 最初の3回の接続：SYN → SYN-ACK → ACK（成功）
+- 4回目以降：SYN送信 → **応答なし**（サーバーからSYN-ACKが返ってこない）
+
+### 原因
+
+**接続終了処理（FIN送信やsocketクローズ）が実装されていないため**、以下の問題が発生：
+
+1. **TCP接続がESTABLISHED状態で残り続ける**
+   ```bash
+   $ sudo ip netns exec host2 ss -tan | grep 40000
+   LISTEN 2      1           10.0.1.1:40000      0.0.0.0:*
+   ESTAB  0      0           10.0.1.1:40000     10.0.0.1:40021
+   ESTAB  0      0           10.0.1.1:40000     10.0.0.1:37333
+   ESTAB  0      0           10.0.1.1:40000     10.0.0.1:37299
+   ```
+   - `LISTEN 2 1`: 最大バックログ2、現在のキュー1（限界に近い）
+   - 3つのESTABLISHED接続が残っている
+
+2. **サーバーのバックログがいっぱいになる**
+   - 新しい接続を受け付けられなくなる
+
+3. **socket_fdのリーク**
+   - ファイルディスクリプタが解放されていない
+   - カーネルのリソースが枯渇
+
+### 根本原因
+
+`TcpConnection`が接続を確立した後、**`socket_fd`をクローズしていない**ため：
+- クライアント側のプロセスが終了してもsocketが開いたまま
+- サーバー側でESTABLISHED状態の接続が残る
+- カーネルによる自動的なFIN送信も行われない
+
+### 回避策（Step03での対応）
+
+接続終了処理（4-way handshake、FIN処理）は**Step 12で学習する内容**のため、Step03では実装しない。
+
+#### 手動クリーンアップ方法
+
+**方法1: ESTABLISHED接続を強制切断（推奨）**
+```bash
+# host2（サーバー側）のESTABLISHED接続をすべて切断
+sudo ip netns exec host2 ss -K dst 10.0.0.1
+```
+
+**方法2: サーバー（nc）を再起動**
+```bash
+# ncプロセスを終了
+sudo ip netns exec host2 pkill -f "nc -l"
+
+# サーバーを再起動
+sudo ip netns exec host2 nc -l 10.0.1.1 40000 &
+```
+
+**方法3: 接続状態を確認してから選択的に切断**
+```bash
+# 現在の接続状態を確認
+sudo ip netns exec host2 ss -tan | grep 40000
+
+# 特定のポートへの接続を切断
+sudo ip netns exec host2 ss -K dst 10.0.0.1:37299
+```
+
+#### テスト実行前のクリーンアップ
+
+```bash
+# クリーンアップしてからテスト実行
+sudo ip netns exec host2 ss -K dst 10.0.0.1 && \
+sudo RUST_LOG=info ip netns exec host1 \
+  target/debug/deps/step03-ea0032633cd6533a \
+  test_complete_handshake --nocapture
+```
+
+### 将来の実装（Step 12）
+
+Step 12で以下を実装予定：
+- `Drop`トレイトによる自動的なsocketクローズ
+- FINパケットの送受信
+- 4-way handshakeの実装
+- TIME_WAIT状態の管理
+- 適切なリソース解放
+
+**参考：将来実装するDropトレイト**（Step 12で学習）
+```rust
+impl Drop for TcpConnection {
+    fn drop(&mut self) {
+        // socket_fdを安全にクローズ
+        if self.socket_fd >= 0 {
+            unsafe {
+                libc::close(self.socket_fd);
+            }
+        }
+    }
+}
+```
+
+### 学んだポイント
+
+- TCPは接続指向プロトコルで、**接続確立と接続終了は対になる処理**
+- 接続終了処理を実装しないと、カーネルリソースがリークする
+- 学習段階では、適切な回避策を使って段階的に実装を進めることが重要
+- 本番環境では、必ず接続終了処理を実装する必要がある
