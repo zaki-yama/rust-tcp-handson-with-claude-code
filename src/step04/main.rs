@@ -30,7 +30,7 @@ pub enum TcpState {
 
 // Task A2: TcpEvent列挙型の定義
 // 状態遷移のトリガーとなるイベントを定義してください
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TcpEvent {
     Connect,       // アプリケーションからの接続要求
     Listen,        // アプリケーションからの待ち受け要求
@@ -70,20 +70,64 @@ impl TcpStateMachine {
 impl TcpStateMachine {
     // Task B1: 状態遷移メソッドの実装
     pub fn transition(&mut self, event: TcpEvent) -> Result<TcpState, String> {
-        // TODO: 状態遷移を実行
-        // 1. 現在の状態とイベントから次の状態を決定
-        // 2. 状態を更新
-        // 3. 履歴に記録
-        // 4. 新しい状態を返す
-        todo!()
+        let old_state = self.current_state;
+        let new_state = self.next_state(old_state, event.clone())?;
+
+        self.current_state = new_state;
+        self.state_history.push((old_state, new_state, event));
+
+        Ok(new_state)
     }
 
     // Task B2: 状態遷移テーブルの実装
     fn next_state(&self, current: TcpState, event: TcpEvent) -> Result<TcpState, String> {
-        // TODO: RFC 9293 Figure 5 に基づいて状態遷移を実装
-        // match (current, event) { ... }
-        // 不正な遷移はエラーを返す
-        todo!()
+        use TcpEvent::*;
+        use TcpState::*;
+        match (current, event) {
+            // Closedからの遷移
+            (Closed, Connect) => Ok(SynSent),
+            (Closed, TcpEvent::Listen) => Ok(TcpState::Listen),
+
+            // Listenからの遷移
+            (TcpState::Listen, ReceiveSyn) => Ok(SynReceived),
+            (TcpState::Listen, Close) => Ok(Closed),
+
+            // SynSentからの遷移
+            (SynSent, ReceiveSynAck) => Ok(Established),
+            (SynSent, ReceiveSyn) => Ok(SynReceived),
+            (SynSent, Close) => Ok(Closed),
+
+            // SynReceivedからの遷移
+            (SynReceived, ReceiveAck) => Ok(Established),
+            (SynReceived, Close) => Ok(FinWait1),
+            (SynReceived, ReceiveRst) => Ok(TcpState::Listen),
+
+            // Establishedからの遷移
+            (Established, Close) => Ok(FinWait1),
+            (Established, ReceiveFin) => Ok(CloseWait),
+
+            // FinWait1からの遷移
+            (FinWait1, ReceiveAck) => Ok(FinWait2),
+            (FinWait1, ReceiveFin) => Ok(Closing),
+
+            // FinWait2からの遷移
+            (FinWait2, ReceiveFin) => Ok(TimeWait),
+
+            // CloseWaitからの遷移
+            (CloseWait, Close) => Ok(LastAck),
+
+            // Closingからの遷移
+            (Closing, ReceiveAck) => Ok(TimeWait),
+
+            // LastAckからの遷移
+            (LastAck, ReceiveAck) => Ok(Closed),
+
+            // TimeWaitからの遷移
+            (TimeWait, Timeout) => Ok(Closed),
+
+            // 不正な遷移
+            _ => Err(format!("Invalid transition: {:?} + {:?}", current, event)),
+        }
     }
 
     // Task B3: 状態確認メソッド

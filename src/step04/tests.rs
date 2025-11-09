@@ -191,29 +191,22 @@ mod phase_b_tests {
         for (initial_state, event, expected_result) in test_cases {
             let mut sm = TcpStateMachine::new();
 
-            // 初期状態を設定（テスト用）
-            // Note: 実際の実装では内部フィールドに直接アクセスする必要がある
-            while sm.current_state() != initial_state {
-                // 正しい状態に到達するまで遷移を繰り返す
-                match initial_state {
-                    TcpState::Listen => {
-                        sm.transition(TcpEvent::Listen).ok();
-                        break;
-                    }
-                    TcpState::SynSent => {
-                        sm.transition(TcpEvent::Connect).ok();
-                        break;
-                    }
-                    TcpState::SynReceived => {
-                        sm.transition(TcpEvent::Listen).ok();
-                        sm.transition(TcpEvent::ReceiveSyn).ok();
-                        break;
-                    }
-                    _ => break,
+            // テストの初期状態をtransition経由で設定
+            match initial_state {
+                TcpState::Listen => {
+                    sm.transition(TcpEvent::Listen).ok();
                 }
+                TcpState::SynSent => {
+                    sm.transition(TcpEvent::Connect).ok();
+                }
+                TcpState::SynReceived => {
+                    sm.transition(TcpEvent::Listen).ok();
+                    sm.transition(TcpEvent::ReceiveSyn).ok();
+                }
+                _ => {}
             }
 
-            let result = sm.transition(event.clone());
+            let result = sm.transition(event);
 
             match expected_result {
                 Ok(expected_state) => {
