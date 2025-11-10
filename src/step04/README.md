@@ -247,75 +247,44 @@ impl TcpStateMachine {
 
 **シナリオ**: Closed → SynSent → Established
 
-```rust
-impl TcpStateMachine {
-    pub fn active_open(&mut self) -> Result<(), String> {
-        // 1. Connect イベントで Closed → SynSent
-        self.transition(TcpEvent::Connect)?;
-        Ok(())
-    }
-
-    pub fn complete_active_open(&mut self) -> Result<(), String> {
-        // 2. SYN-ACK受信で SynSent → Established
-        self.transition(TcpEvent::ReceiveSynAck)?;
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `active_open()`: 接続を開始（Closed → SynSent）
+- `complete_active_open()`: SYN-ACK受信で接続完了（SynSent → Established）
 
 **実装ヒント**:
 - Step03の3-way handshakeと対応
 - クライアント視点の状態遷移
+- 既に実装済みの`transition()`メソッドを使用
+- 適切な`TcpEvent`を選択して呼び出す
 
 ### Task C2: パッシブオープンの実装
 サーバー側（接続を待ち受ける側）の状態遷移を実装します。
 
 **シナリオ**: Closed → Listen → SynReceived → Established
 
-```rust
-impl TcpStateMachine {
-    pub fn passive_open(&mut self) -> Result<(), String> {
-        // 1. Listen イベントで Closed → Listen
-        self.transition(TcpEvent::Listen)?;
-        Ok(())
-    }
-
-    pub fn accept_connection(&mut self) -> Result<(), String> {
-        // 2. SYN受信で Listen → SynReceived
-        self.transition(TcpEvent::ReceiveSyn)?;
-
-        // 3. ACK受信で SynReceived → Established
-        self.transition(TcpEvent::ReceiveAck)?;
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `passive_open()`: 待ち受け開始（Closed → Listen）
+- `accept_connection()`: SYN/ACK受信で接続確立（SynReceived → Established）
 
 **実装ヒント**:
 - サーバー側の接続確立フロー
 - Listenステートの扱い
+- `accept_connection()`では、Listen→SynReceivedの遷移は外部で処理済みと想定
+- SynReceived状態からACK受信でEstablishedへ遷移
 
 ### Task C3: 同時オープンの処理
 両方がSYNを送信するケースの処理を実装します。
 
 **シナリオ**: SynSent → SynReceived → Established
 
-```rust
-impl TcpStateMachine {
-    pub fn simultaneous_open(&mut self) -> Result<(), String> {
-        // SynSent状態でSYN受信 → SynReceived
-        self.transition(TcpEvent::ReceiveSyn)?;
-
-        // SYN-ACK受信 → Established
-        self.transition(TcpEvent::ReceiveSynAck)?;
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `simultaneous_open()`: 両者が同時にSYNを送信した場合の処理
 
 **実装ヒント**:
 - RFC 9293 Section 3.5参照
 - 稀なケースだが仕様上サポート必要
+- SynSent状態でSYNを受信する
+- 複数の`transition()`呼び出しを組み合わせる
 
 ---
 
@@ -326,78 +295,42 @@ impl TcpStateMachine {
 
 **シナリオ**: Established → FinWait1 → FinWait2 → TimeWait → Closed
 
-```rust
-impl TcpStateMachine {
-    pub fn active_close(&mut self) -> Result<(), String> {
-        // 1. FIN送信: Established → FinWait1
-        self.transition(TcpEvent::Close)?;
-
-        // 2. ACK受信: FinWait1 → FinWait2
-        self.transition(TcpEvent::ReceiveAck)?;
-
-        // 3. FIN受信: FinWait2 → TimeWait
-        self.transition(TcpEvent::ReceiveFin)?;
-
-        // 4. タイムアウト: TimeWait → Closed
-        // (2MSL後)
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `active_close()`: 能動的な接続終了を開始（Established → FinWait1）
 
 **実装ヒント**:
 - 4-way handshakeの実装
 - TimeWait状態の重要性（2MSL待機）
+- このメソッドでは最初のFIN送信のみ実装（Established → FinWait1）
+- その後の遷移はテストで個別に`transition()`を呼び出して確認
 
 ### Task D2: パッシブクローズの実装
 相手から切断された場合の状態遷移を実装します。
 
 **シナリオ**: Established → CloseWait → LastAck → Closed
 
-```rust
-impl TcpStateMachine {
-    pub fn passive_close(&mut self) -> Result<(), String> {
-        // 1. FIN受信: Established → CloseWait
-        self.transition(TcpEvent::ReceiveFin)?;
-
-        // 2. FIN送信: CloseWait → LastAck
-        self.transition(TcpEvent::Close)?;
-
-        // 3. ACK受信: LastAck → Closed
-        self.transition(TcpEvent::ReceiveAck)?;
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `passive_close()`: 相手からのFIN受信を処理（Established → CloseWait）
 
 **実装ヒント**:
 - 受動的な切断処理
 - CloseWait状態でアプリケーションの切断を待つ
+- このメソッドでは最初のFIN受信のみ実装（Established → CloseWait）
+- その後の遷移（CloseWait → LastAck → Closed）はテストで確認
 
 ### Task D3: 同時クローズの処理
 両方が同時にFINを送信するケースを実装します。
 
 **シナリオ**: Established → FinWait1 → Closing → TimeWait → Closed
 
-```rust
-impl TcpStateMachine {
-    pub fn simultaneous_close(&mut self) -> Result<(), String> {
-        // 1. FIN送信: Established → FinWait1
-        self.transition(TcpEvent::Close)?;
-
-        // 2. FIN受信: FinWait1 → Closing
-        self.transition(TcpEvent::ReceiveFin)?;
-
-        // 3. ACK受信: Closing → TimeWait
-        self.transition(TcpEvent::ReceiveAck)?;
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `simultaneous_close()`: FinWait1状態でFINを受信した場合の処理
 
 **実装ヒント**:
 - 稀なケースだが仕様上必要
 - Closing状態の扱い
+- FinWait1状態から開始（既にFIN送信済み）
+- FIN受信でClosingへ遷移
 
 ---
 
@@ -406,77 +339,43 @@ impl TcpStateMachine {
 ### Task E1: RSTパケット処理
 リセットパケット受信時の処理を実装します。
 
-```rust
-impl TcpStateMachine {
-    pub fn handle_reset(&mut self) -> Result<(), String> {
-        // 任意の状態からClosedへ即座に遷移
-        if self.current_state != TcpState::Closed {
-            self.current_state = TcpState::Closed;
-            self.state_history.push((
-                self.current_state,
-                TcpState::Closed,
-                TcpEvent::ReceiveRst,
-            ));
-        }
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `handle_reset()`: RST受信時の強制リセット処理
 
 **実装ヒント**:
 - RSTは即座に接続をリセット
 - どの状態からでもClosedに遷移可能
+- `transition()`を使わず、直接`current_state`を変更
+- 履歴（`state_history`）に記録することを忘れずに
+- 既にClosed状態の場合は何もしない
 
 ### Task E2: タイムアウト処理
 タイムアウト時の状態遷移を実装します。
 
-```rust
-impl TcpStateMachine {
-    pub fn handle_timeout(&mut self) -> Result<(), String> {
-        match self.current_state {
-            TcpState::SynSent | TcpState::SynReceived => {
-                // 接続確立タイムアウト → Closed
-                self.transition(TcpEvent::Timeout)?;
-                self.current_state = TcpState::Closed;
-            }
-            TcpState::TimeWait => {
-                // 2MSL経過 → Closed
-                self.current_state = TcpState::Closed;
-            }
-            _ => {
-                return Err(format!("Timeout not applicable in {:?}", self.current_state));
-            }
-        }
-        Ok(())
-    }
-}
-```
+**実装するメソッド**:
+- `handle_timeout()`: 状態に応じたタイムアウト処理
 
 **実装ヒント**:
 - 状態ごとにタイムアウト処理が異なる
 - TimeWaitの2MSL後にClosed
+- SynSent/SynReceived: 接続確立失敗 → Closed
+- TimeWait: 2MSL経過 → Closed
+- その他の状態ではタイムアウトは不正（エラーを返す）
+- `match`式で状態ごとに処理を分岐
 
 ### Task E3: 不正遷移の検出とログ
 不正な状態遷移を検出して記録します。
 
-```rust
-impl TcpStateMachine {
-    pub fn get_state_history(&self) -> &[(TcpState, TcpState, TcpEvent)] {
-        &self.state_history
-    }
-
-    pub fn print_state_diagram(&self) {
-        println!("State Transition History:");
-        for (i, (from, to, event)) in self.state_history.iter().enumerate() {
-            println!("  {}. {:?} --[{:?}]--> {:?}", i + 1, from, event, to);
-        }
-    }
-}
-```
+**実装するメソッド**:
+- `get_state_history()`: 状態遷移履歴を取得
+- `print_state_diagram()`: 状態遷移を見やすく表示
 
 **実装ヒント**:
 - デバッグ用の状態遷移履歴表示
 - 問題解析に役立つ
+- `get_state_history()`は`state_history`フィールドへの参照を返す
+- `print_state_diagram()`は履歴をループして見やすく整形
+- 出力形式: "1. Closed --[Connect]--> SynSent"
 
 ---
 
@@ -485,40 +384,26 @@ impl TcpStateMachine {
 ### Task F1: 完全な接続確立・終了テスト
 接続の開始から終了までの完全なフローをテストします。
 
-```rust
-#[test]
-fn test_full_connection_lifecycle() {
-    let mut sm = TcpStateMachine::new();
-
-    // アクティブオープン
-    sm.active_open().unwrap();
-    assert_eq!(sm.current_state(), TcpState::SynSent);
-
-    sm.complete_active_open().unwrap();
-    assert_eq!(sm.current_state(), TcpState::Established);
-
-    // アクティブクローズ
-    sm.active_close().unwrap();
-    // ... 検証
-}
-```
+**実装ヒント**:
+- Phase A〜Eで実装したすべての機能を組み合わせる
+- 接続確立から終了までの一連の流れを確認
+- 各状態で適切なメソッドが使えることを検証
 
 ### Task F2: エラーケースの検証
 異常系のテストを実装します。
 
-```rust
-#[test]
-fn test_invalid_transitions() {
-    let mut sm = TcpStateMachine::new();
-
-    // Closed状態でFIN受信は不正
-    let result = sm.transition(TcpEvent::ReceiveFin);
-    assert!(result.is_err());
-}
-```
+**実装ヒント**:
+- 不正な状態遷移がエラーになることを確認
+- RST受信時の即座の終了を確認
+- タイムアウト処理の動作を確認
 
 ### Task F3: RFC準拠の確認
 RFC 9293の状態遷移図と実装が一致することを確認します。
+
+**実装ヒント**:
+- RFC 9293 Figure 5の状態遷移図と照合
+- すべての11状態に到達可能であることを確認
+- 主要な遷移パターンが正しく実装されているか検証
 
 ---
 
