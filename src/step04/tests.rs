@@ -11,7 +11,6 @@ mod phase_a_tests {
     // Task A1: TcpState列挙型の基本テスト
     #[test]
     fn test_tcp_state_enum_basic() {
-        // Red: 最初は失敗する（状態enumが未実装）
         let state = TcpState::Closed;
         assert_eq!(state, TcpState::Closed);
 
@@ -21,9 +20,9 @@ mod phase_a_tests {
         assert_ne!(state, TcpState::Established);
     }
 
+    // RFC 9293で定義されている11種類の状態をすべてテスト
     #[test]
     fn test_tcp_state_all_variants() {
-        // RFC 9293で定義されている11種類の状態をすべてテスト
         let states = [
             TcpState::Closed,
             TcpState::Listen,
@@ -50,26 +49,26 @@ mod phase_a_tests {
         }
     }
 
+    // Cloneトレイトのテスト
     #[test]
     fn test_tcp_state_clone() {
-        // Cloneトレイトのテスト
         let original = TcpState::Established;
         let cloned = original.clone();
         assert_eq!(original, cloned);
     }
 
     // Task A2: TcpEvent列挙型のテスト
+    // イベントが正しく定義されているかテスト
     #[test]
     fn test_tcp_event_enum() {
-        // イベントが正しく定義されているかテスト
         let event = TcpEvent::Connect;
         assert_eq!(event, TcpEvent::Connect);
         assert_ne!(event, TcpEvent::Listen);
     }
 
+    // すべてのイベントを列挙してテスト
     #[test]
     fn test_tcp_event_all_variants() {
-        // すべてのイベントを列挙してテスト
         let events = vec![
             TcpEvent::Connect,
             TcpEvent::Listen,
@@ -92,7 +91,6 @@ mod phase_a_tests {
     // Task A3: StateMachineの基本構造テスト
     #[test]
     fn test_state_machine_creation() {
-        // Red: 最初は失敗する（TcpStateMachine未実装）
         let sm = TcpStateMachine::new();
 
         // 初期状態はClosed
@@ -120,7 +118,6 @@ mod phase_b_tests {
     // Task B1: 基本的な状態遷移テスト
     #[test]
     fn test_transition_basic() {
-        // Red: transition()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // Closed → Listen遷移
@@ -130,9 +127,9 @@ mod phase_b_tests {
         assert_eq!(sm.current_state(), TcpState::Listen);
     }
 
+    // Closed → SynSent遷移（アクティブオープン）
     #[test]
     fn test_transition_closed_to_syn_sent() {
-        // Closed → SynSent遷移（アクティブオープン）
         let mut sm = TcpStateMachine::new();
 
         let result = sm.transition(TcpEvent::Connect);
@@ -141,9 +138,9 @@ mod phase_b_tests {
         assert_eq!(sm.current_state(), TcpState::SynSent);
     }
 
+    // 不正な遷移はエラーを返す
     #[test]
     fn test_invalid_transition() {
-        // 不正な遷移はエラーを返す
         let mut sm = TcpStateMachine::new();
 
         // Closed状態でReceiveSynAckは不正
@@ -152,9 +149,9 @@ mod phase_b_tests {
         assert_eq!(sm.current_state(), TcpState::Closed); // 状態は変わらない
     }
 
+    // エラーメッセージが適切に返される
     #[test]
     fn test_transition_returns_error_message() {
-        // エラーメッセージが適切に返される
         let mut sm = TcpStateMachine::new();
 
         let result = sm.transition(TcpEvent::ReceiveFin);
@@ -165,9 +162,9 @@ mod phase_b_tests {
     }
 
     // Task B2: 状態遷移テーブルのテスト
+    // 複数の遷移をテスト
     #[test]
     fn test_state_transition_table() {
-        // 複数の遷移をテスト
         let test_cases: Vec<(TcpState, TcpEvent, Result<TcpState, String>)> = vec![
             (TcpState::Closed, TcpEvent::Connect, Ok(TcpState::SynSent)),
             (TcpState::Closed, TcpEvent::Listen, Ok(TcpState::Listen)),
@@ -294,7 +291,6 @@ mod phase_c_tests {
     // Task C1: アクティブオープンのテスト
     #[test]
     fn test_active_open() {
-        // Red: active_open()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // アクティブオープン実行
@@ -303,9 +299,9 @@ mod phase_c_tests {
         assert_eq!(sm.current_state(), TcpState::SynSent);
     }
 
+    // Closed以外の状態からactive_openを呼ぶとエラー
     #[test]
     fn test_active_open_from_non_closed_state() {
-        // Closed以外の状態からactive_openを呼ぶとエラー
         let mut sm = TcpStateMachine::new();
         sm.transition(TcpEvent::Listen).ok();
 
@@ -313,9 +309,9 @@ mod phase_c_tests {
         assert!(result.is_err(), "Active open from Listen should fail");
     }
 
+    // SYN-ACK受信で接続完了
     #[test]
     fn test_complete_active_open() {
-        // SYN-ACK受信で接続完了
         let mut sm = TcpStateMachine::new();
         sm.active_open().ok();
 
@@ -325,9 +321,9 @@ mod phase_c_tests {
         assert_eq!(sm.current_state(), TcpState::Established);
     }
 
+    // SynSent以外の状態からcomplete_active_openを呼ぶとエラー
     #[test]
     fn test_complete_active_open_from_wrong_state() {
-        // SynSent以外の状態からcomplete_active_openを呼ぶとエラー
         let mut sm = TcpStateMachine::new();
 
         let result = sm.complete_active_open();
@@ -340,7 +336,6 @@ mod phase_c_tests {
     // Task C2: パッシブオープンのテスト
     #[test]
     fn test_passive_open() {
-        // Red: passive_open()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // パッシブオープン実行
@@ -365,9 +360,9 @@ mod phase_c_tests {
         assert_eq!(sm.current_state(), TcpState::Established);
     }
 
+    // SynReceived以外の状態からaccept_connectionを呼ぶとエラー
     #[test]
     fn test_accept_connection_from_wrong_state() {
-        // SynReceived以外の状態からaccept_connectionを呼ぶとエラー
         let mut sm = TcpStateMachine::new();
 
         let result = sm.accept_connection();
@@ -377,7 +372,6 @@ mod phase_c_tests {
     // Task C3: 同時オープンのテスト
     #[test]
     fn test_simultaneous_open() {
-        // Red: simultaneous_open()メソッドが未実装
         let mut sm = TcpStateMachine::new();
         sm.active_open().ok();
         assert_eq!(sm.current_state(), TcpState::SynSent);
@@ -392,9 +386,9 @@ mod phase_c_tests {
         assert_eq!(sm.current_state(), TcpState::Established);
     }
 
+    // クライアント・サーバー両側の完全な接続シーケンス
     #[test]
     fn test_client_server_connection_sequence() {
-        // クライアント側の完全な接続シーケンス
         let mut client = TcpStateMachine::new();
 
         // 1. アクティブオープン
@@ -433,7 +427,6 @@ mod phase_d_tests {
     // Task D1: アクティブクローズのテスト
     #[test]
     fn test_active_close() {
-        // Red: active_close()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // Established状態に移行
@@ -447,9 +440,9 @@ mod phase_d_tests {
         assert_eq!(sm.current_state(), TcpState::FinWait1);
     }
 
+    // Established → FinWait1 → FinWait2 → TimeWait → Closed の完全なシーケンス
     #[test]
     fn test_active_close_complete_sequence() {
-        // Established → FinWait1 → FinWait2 → TimeWait → Closed
         let mut sm = TcpStateMachine::new();
 
         // Established状態に移行
@@ -473,9 +466,9 @@ mod phase_d_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // Established以外の状態からactive_closeを呼ぶとエラー
     #[test]
     fn test_active_close_from_wrong_state() {
-        // Established以外の状態からactive_closeを呼ぶとエラー
         let mut sm = TcpStateMachine::new();
 
         let result = sm.active_close();
@@ -485,7 +478,6 @@ mod phase_d_tests {
     // Task D2: パッシブクローズのテスト
     #[test]
     fn test_passive_close() {
-        // Red: passive_close()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // Established状態に移行
@@ -498,9 +490,9 @@ mod phase_d_tests {
         assert_eq!(sm.current_state(), TcpState::CloseWait);
     }
 
+    // Established → CloseWait → LastAck → Closed の完全なシーケンス
     #[test]
     fn test_passive_close_complete_sequence() {
-        // Established → CloseWait → LastAck → Closed
         let mut sm = TcpStateMachine::new();
 
         // Established状態に移行
@@ -520,9 +512,9 @@ mod phase_d_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // Established以外の状態からpassive_closeを呼ぶとエラー
     #[test]
     fn test_passive_close_from_wrong_state() {
-        // Established以外の状態からpassive_closeを呼ぶとエラー
         let mut sm = TcpStateMachine::new();
 
         let result = sm.passive_close();
@@ -532,7 +524,6 @@ mod phase_d_tests {
     // Task D3: 同時クローズのテスト
     #[test]
     fn test_simultaneous_close() {
-        // Red: simultaneous_close()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // Established状態に移行
@@ -549,9 +540,9 @@ mod phase_d_tests {
         assert_eq!(sm.current_state(), TcpState::Closing);
     }
 
+    // Established → FinWait1 → Closing → TimeWait → Closed の完全なシーケンス
     #[test]
     fn test_simultaneous_close_complete_sequence() {
-        // Established → FinWait1 → Closing → TimeWait → Closed
         let mut sm = TcpStateMachine::new();
 
         // Established状態に移行
@@ -574,9 +565,9 @@ mod phase_d_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // すべてのクローズシナリオが正しくClosedに到達するかテスト
     #[test]
     fn test_all_close_scenarios() {
-        // すべてのクローズシナリオが正しくClosedに到達するかテスト
         let scenarios = vec![
             // (初期状態設定, イベントシーケンス, 期待される最終状態)
             (
@@ -629,7 +620,6 @@ mod phase_e_tests {
     // Task E1: RSTパケット処理のテスト
     #[test]
     fn test_handle_reset() {
-        // Red: handle_reset()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // Established状態に移行
@@ -643,9 +633,9 @@ mod phase_e_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // 様々な状態からRST受信でClosedに遷移
     #[test]
     fn test_handle_reset_from_various_states() {
-        // 様々な状態からRST受信でClosedに遷移
         let states = vec![
             TcpState::Listen,
             TcpState::SynSent,
@@ -685,9 +675,9 @@ mod phase_e_tests {
         }
     }
 
+    // transitionメソッド経由でRSTを処理
     #[test]
     fn test_rst_via_transition() {
-        // transitionメソッド経由でRSTを処理
         let mut sm = TcpStateMachine::new();
         sm.transition(TcpEvent::Connect).ok();
         sm.transition(TcpEvent::ReceiveSynAck).ok();
@@ -700,7 +690,6 @@ mod phase_e_tests {
     // Task E2: タイムアウト処理のテスト
     #[test]
     fn test_handle_timeout() {
-        // Red: handle_timeout()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // SynSent状態でタイムアウト
@@ -712,9 +701,9 @@ mod phase_e_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // SynReceived状態でタイムアウト
     #[test]
     fn test_timeout_in_syn_received() {
-        // SynReceived状態でタイムアウト
         let mut sm = TcpStateMachine::new();
         sm.transition(TcpEvent::Listen).ok();
         sm.transition(TcpEvent::ReceiveSyn).ok();
@@ -724,9 +713,9 @@ mod phase_e_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // TimeWait状態でタイムアウト（2MSL経過）
     #[test]
     fn test_timeout_in_time_wait() {
-        // TimeWait状態でタイムアウト（2MSL経過）
         let mut sm = TcpStateMachine::new();
 
         // TimeWait状態に移行
@@ -742,9 +731,9 @@ mod phase_e_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // Established状態でタイムアウトは通常発生しない（エラー）
     #[test]
     fn test_timeout_in_established_is_error() {
-        // Established状態でタイムアウトは通常発生しない（エラー）
         let mut sm = TcpStateMachine::new();
         sm.transition(TcpEvent::Connect).ok();
         sm.transition(TcpEvent::ReceiveSynAck).ok();
@@ -761,7 +750,6 @@ mod phase_e_tests {
     // Task E3: 不正遷移の検出とログ
     #[test]
     fn test_state_history_tracking() {
-        // Red: get_state_history()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // いくつかの遷移を実行
@@ -786,9 +774,9 @@ mod phase_e_tests {
         assert_eq!(history[1].2, TcpEvent::ReceiveSynAck);
     }
 
+    // 不正な遷移は履歴に記録されない
     #[test]
     fn test_invalid_transition_not_in_history() {
-        // 不正な遷移は履歴に記録されない
         let mut sm = TcpStateMachine::new();
 
         // 正常な遷移
@@ -808,7 +796,6 @@ mod phase_e_tests {
 
     #[test]
     fn test_print_state_diagram() {
-        // Red: print_state_diagram()メソッドが未実装
         let mut sm = TcpStateMachine::new();
 
         // いくつかの遷移
@@ -819,9 +806,9 @@ mod phase_e_tests {
         sm.print_state_diagram();
     }
 
+    // エラーメッセージが有用な情報を含むかテスト
     #[test]
     fn test_error_message_quality() {
-        // エラーメッセージが有用な情報を含むかテスト
         let mut sm = TcpStateMachine::new();
 
         let result = sm.transition(TcpEvent::ReceiveSynAck);
@@ -846,9 +833,9 @@ mod phase_f_tests {
     use super::*;
 
     // Task F1: 完全な接続ライフサイクルテスト
+    // 接続確立から終了までの完全なフロー
     #[test]
     fn test_complete_connection_lifecycle() {
-        // 接続確立から終了までの完全なフロー
         let mut sm = TcpStateMachine::new();
 
         // 1. 接続確立（アクティブオープン）
@@ -890,9 +877,9 @@ mod phase_f_tests {
         );
     }
 
+    // サーバー側の完全なライフサイクル
     #[test]
     fn test_server_connection_lifecycle() {
-        // サーバー側の完全なライフサイクル
         let mut sm = TcpStateMachine::new();
 
         // 1. Listen開始
@@ -924,9 +911,9 @@ mod phase_f_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // 同時オープン + 同時クローズ
     #[test]
     fn test_simultaneous_scenarios() {
-        // 同時オープン + 同時クローズ
         let mut sm = TcpStateMachine::new();
 
         // 同時オープン: SynSent → SynReceived
@@ -950,9 +937,9 @@ mod phase_f_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
+    // エラーからの回復シナリオ
     #[test]
     fn test_error_recovery() {
-        // エラーからの回復シナリオ
         let mut sm = TcpStateMachine::new();
 
         // 正常な接続開始
@@ -976,9 +963,9 @@ mod phase_f_tests {
         assert_eq!(sm.current_state(), TcpState::SynSent);
     }
 
+    // すべての状態に到達可能かテスト
     #[test]
     fn test_all_states_reachable() {
-        // すべての状態に到達可能かテスト
         let reachable_states = vec![
             TcpState::Closed,
             TcpState::Listen,
@@ -1067,9 +1054,9 @@ mod phase_f_tests {
         }
     }
 
+    // 履歴が完全に記録されているかテスト
     #[test]
     fn test_state_history_completeness() {
-        // 履歴が完全に記録されているかテスト
         let mut sm = TcpStateMachine::new();
 
         // 複数の遷移を実行
@@ -1098,9 +1085,9 @@ mod phase_f_tests {
         }
     }
 
+    // Display実装のテスト
     #[test]
     fn test_display_implementations() {
-        // Display実装のテスト
         let state = TcpState::Established;
         let state_str = format!("{}", state);
         assert!(!state_str.is_empty(), "State display should not be empty");
@@ -1110,9 +1097,9 @@ mod phase_f_tests {
         assert!(!event_str.is_empty(), "Event display should not be empty");
     }
 
+    // RFC 9293準拠性のテスト
     #[test]
     fn test_rfc_compliance() {
-        // RFC 9293準拠性のテスト
         let mut sm = TcpStateMachine::new();
 
         // RFC 9293 Figure 6の主要な遷移パターンをテスト
