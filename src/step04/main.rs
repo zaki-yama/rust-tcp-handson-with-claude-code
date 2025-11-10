@@ -162,33 +162,33 @@ impl TcpStateMachine {
     // Task C1: アクティブオープンの実装
     // クライアント側: Closed → SynSent → Established
     pub fn active_open(&mut self) -> Result<(), String> {
-        // TODO: Connect イベントで Closed → SynSent
-        todo!()
+        self.transition(TcpEvent::Connect)?;
+        Ok(())
     }
 
     pub fn complete_active_open(&mut self) -> Result<(), String> {
-        // TODO: SYN-ACK受信で SynSent → Established
-        todo!()
+        self.transition(TcpEvent::ReceiveSynAck)?;
+        Ok(())
     }
 
     // Task C2: パッシブオープンの実装
-    // サーバー側: Closed → Listen → SynReceived → Established
     pub fn passive_open(&mut self) -> Result<(), String> {
-        // TODO: Listen イベントで Closed → Listen
-        todo!()
+        self.transition(TcpEvent::Listen)?;
+        Ok(())
     }
 
     pub fn accept_connection(&mut self) -> Result<(), String> {
-        // TODO: SYN受信で Listen → SynReceived
-        // TODO: ACK受信で SynReceived → Established
-        todo!()
+        self.transition(TcpEvent::ReceiveAck)?;
+        Ok(())
     }
 
     // Task C3: 同時オープンの処理
-    // SynSent → SynReceived → Established
+    // SynSent → SynReceived
     pub fn simultaneous_open(&mut self) -> Result<(), String> {
-        // TODO: SynSent状態でSYN受信 → SynReceived → Established
-        todo!()
+        // SynSent状態でSYN受信 → SynReceived
+        // 注: その後Establishedへ進むかは呼び出し側が判断
+        self.transition(TcpEvent::ReceiveSyn)?;
+        Ok(())
     }
 }
 

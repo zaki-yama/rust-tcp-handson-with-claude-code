@@ -380,24 +380,16 @@ mod phase_c_tests {
         // Red: simultaneous_open()メソッドが未実装
         let mut sm = TcpStateMachine::new();
         sm.active_open().ok();
+        assert_eq!(sm.current_state(), TcpState::SynSent);
 
-        // SynSent状態でSYN受信
+        // SynSent状態でSYN受信 → SynReceived
         let result = sm.simultaneous_open();
         assert!(result.is_ok(), "Simultaneous open should succeed");
+        assert_eq!(sm.current_state(), TcpState::SynReceived);
 
-        // SynReceived状態を経てEstablishedへ
-        // （実装によってはSynReceived経由またはEstablished直行）
-        let state = sm.current_state();
-        assert!(
-            state == TcpState::SynReceived || state == TcpState::Established,
-            "State should be SynReceived or Established"
-        );
-
-        // SynReceivedの場合、ACK受信でEstablished
-        if state == TcpState::SynReceived {
-            sm.transition(TcpEvent::ReceiveAck).ok();
-            assert_eq!(sm.current_state(), TcpState::Established);
-        }
+        // その後、ACK受信でEstablishedへ（呼び出し側が制御）
+        sm.transition(TcpEvent::ReceiveAck).ok();
+        assert_eq!(sm.current_state(), TcpState::Established);
     }
 
     #[test]
@@ -937,14 +929,13 @@ mod phase_f_tests {
         // 同時オープン + 同時クローズ
         let mut sm = TcpStateMachine::new();
 
-        // 同時オープン
+        // 同時オープン: SynSent → SynReceived
         sm.active_open().ok();
         sm.simultaneous_open().ok();
+        assert_eq!(sm.current_state(), TcpState::SynReceived);
 
-        // SynReceivedまたはEstablished
-        if sm.current_state() == TcpState::SynReceived {
-            sm.transition(TcpEvent::ReceiveAck).ok();
-        }
+        // ACK受信でEstablishedへ
+        sm.transition(TcpEvent::ReceiveAck).ok();
         assert_eq!(sm.current_state(), TcpState::Established);
 
         // 同時クローズ
