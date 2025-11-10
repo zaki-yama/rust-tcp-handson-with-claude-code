@@ -132,25 +132,25 @@ impl TcpStateMachine {
 
     // Task B3: 状態確認メソッド
     pub fn is_established(&self) -> bool {
-        // TODO: Established状態かチェック
-        todo!()
+        self.current_state == TcpState::Established
     }
 
     pub fn is_closed(&self) -> bool {
-        // TODO: Closed状態かチェック
-        todo!()
+        self.current_state == TcpState::Closed
     }
 
     pub fn can_send_data(&self) -> bool {
-        // TODO: データ送信可能な状態かチェック
-        // (Established または CloseWait)
-        todo!()
+        matches!(
+            self.current_state,
+            TcpState::Established | TcpState::CloseWait
+        )
     }
 
     pub fn can_receive_data(&self) -> bool {
-        // TODO: データ受信可能な状態かチェック
-        // (Established, FinWait1, FinWait2)
-        todo!()
+        matches!(
+            self.current_state,
+            TcpState::Established | TcpState::FinWait1 | TcpState::FinWait2
+        )
     }
 }
 
