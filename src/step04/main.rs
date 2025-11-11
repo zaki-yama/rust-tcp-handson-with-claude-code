@@ -198,24 +198,24 @@ impl TcpStateMachine {
 
 impl TcpStateMachine {
     // Task D1: アクティブクローズの実装
-    // Established → FinWait1 → FinWait2 → TimeWait → Closed
+    // Established → FinWait1 (→ FinWait2 → TimeWait → Closed)
     pub fn active_close(&mut self) -> Result<(), String> {
-        // TODO: FIN送信して終了シーケンスを開始
-        todo!()
+        self.transition(TcpEvent::Close)?;
+        Ok(())
     }
 
     // Task D2: パッシブクローズの実装
-    // Established → CloseWait → LastAck → Closed
+    // Established → CloseWait (→ LastAck → Closed)
     pub fn passive_close(&mut self) -> Result<(), String> {
-        // TODO: FIN受信後の処理
-        todo!()
+        self.transition(TcpEvent::ReceiveFin)?;
+        Ok(())
     }
 
     // Task D3: 同時クローズの処理
-    // Established → FinWait1 → Closing → TimeWait → Closed
+    // (Established →) FinWait1 → Closing (→ TimeWait → Closed)
     pub fn simultaneous_close(&mut self) -> Result<(), String> {
-        // TODO: 両方がFINを送信するケース
-        todo!()
+        self.transition(TcpEvent::ReceiveFin)?;
+        Ok(())
     }
 }
 
