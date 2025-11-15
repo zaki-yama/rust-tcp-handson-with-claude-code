@@ -336,6 +336,13 @@ impl TcpStateMachine {
 
 ## Phase E: エラーハンドリングと異常系
 
+### RFC参照
+- **RFC 9293 - Section 3.5.2**: Reset Generation
+- **RFC 9293 - Section 3.5.3**: Reset Processing（⭐️ 最重要）
+- **RFC 9293 - Section 3.3.2**: State Machine Overview（RST遷移を含む）
+
+https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5
+
 ### Task E1: RSTパケット処理
 リセットパケット受信時の処理を実装します。
 

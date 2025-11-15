@@ -633,20 +633,21 @@ mod phase_e_tests {
         assert_eq!(sm.current_state(), TcpState::Closed);
     }
 
-    // 様々な状態からRST受信でClosedに遷移
+    // 様々な状態からRST受信の処理（RFC 9293 Section 3.5.3準拠）
     #[test]
     fn test_handle_reset_from_various_states() {
-        let states = vec![
-            TcpState::Listen,
-            TcpState::SynSent,
-            TcpState::SynReceived,
-            TcpState::Established,
-            TcpState::FinWait1,
-            TcpState::FinWait2,
-            TcpState::CloseWait,
+        let test_cases = vec![
+            // (初期状態, RST後の期待状態)
+            (TcpState::Listen, TcpState::Listen), // RFC: LISTENはRSTを無視
+            (TcpState::SynSent, TcpState::Closed), // RFC: Closedへ遷移
+            (TcpState::SynReceived, TcpState::Listen), // RFC: パッシブオープン経由ならListenへ
+            (TcpState::Established, TcpState::Closed), // RFC: Closedへ遷移
+            (TcpState::FinWait1, TcpState::Closed), // RFC: Closedへ遷移
+            (TcpState::FinWait2, TcpState::Closed), // RFC: Closedへ遷移
+            (TcpState::CloseWait, TcpState::Closed), // RFC: Closedへ遷移
         ];
 
-        for initial_state in states {
+        for (initial_state, expected_state) in test_cases {
             let mut sm = TcpStateMachine::new();
 
             // 初期状態に設定（簡易版）
@@ -656,6 +657,10 @@ mod phase_e_tests {
                 }
                 TcpState::SynSent => {
                     sm.transition(TcpEvent::Connect).ok();
+                }
+                TcpState::SynReceived => {
+                    sm.transition(TcpEvent::Listen).ok();
+                    sm.transition(TcpEvent::ReceiveSyn).ok();
                 }
                 TcpState::Established => {
                     sm.transition(TcpEvent::Connect).ok();
@@ -668,8 +673,9 @@ mod phase_e_tests {
             sm.handle_reset().ok();
             assert_eq!(
                 sm.current_state(),
-                TcpState::Closed,
-                "Should transition to Closed from {:?}",
+                expected_state,
+                "Should transition to {:?} from {:?}",
+                expected_state,
                 initial_state
             );
         }

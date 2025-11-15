@@ -100,7 +100,7 @@ impl TcpStateMachine {
             // SynReceivedからの遷移
             (SynReceived, ReceiveAck) => Ok(Established),
             (SynReceived, Close) => Ok(FinWait1),
-            (SynReceived, ReceiveRst) => Ok(TcpState::Listen),
+            (SynReceived, ReceiveRst) => Ok(TcpState::Listen), // RFC 9293: パッシブオープン経由の場合はListenへ
 
             // Establishedからの遷移
             (Established, Close) => Ok(FinWait1),
@@ -124,6 +124,18 @@ impl TcpStateMachine {
 
             // TimeWaitからの遷移
             (TimeWait, Timeout) => Ok(Closed),
+
+            // RSTパケット処理（RFC 9293 Section 3.5.3）
+            (Closed, ReceiveRst) => Ok(Closed), // 既にClosedの場合は何もしない
+            (TcpState::Listen, ReceiveRst) => Ok(TcpState::Listen), // LISTENはRSTを無視
+            (SynSent, ReceiveRst) => Ok(Closed),
+            (Established, ReceiveRst) => Ok(Closed),
+            (FinWait1, ReceiveRst) => Ok(Closed),
+            (FinWait2, ReceiveRst) => Ok(Closed),
+            (CloseWait, ReceiveRst) => Ok(Closed),
+            (Closing, ReceiveRst) => Ok(Closed),
+            (LastAck, ReceiveRst) => Ok(Closed),
+            (TimeWait, ReceiveRst) => Ok(Closed),
 
             // 不正な遷移
             _ => Err(format!("Invalid transition: {:?} + {:?}", current, event)),
@@ -225,9 +237,11 @@ impl TcpStateMachine {
 
 impl TcpStateMachine {
     // Task E1: RSTパケット処理
+    // RFC 9293 Section 3.5.3: Reset Processing
     pub fn handle_reset(&mut self) -> Result<(), String> {
-        // TODO: 任意の状態からClosedへ即座に遷移
-        todo!()
+        // transition()経由でRST処理（状態遷移テーブルに従う）
+        self.transition(TcpEvent::ReceiveRst)?;
+        Ok(())
     }
 
     // Task E2: タイムアウト処理
