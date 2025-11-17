@@ -137,6 +137,10 @@ impl TcpStateMachine {
             (LastAck, ReceiveRst) => Ok(Closed),
             (TimeWait, ReceiveRst) => Ok(Closed),
 
+            // タイムアウト
+            (SynSent, Timeout) => Ok(Closed),
+            (SynReceived, Timeout) => Ok(Closed),
+
             // 不正な遷移
             _ => Err(format!("Invalid transition: {:?} + {:?}", current, event)),
         }
@@ -246,15 +250,20 @@ impl TcpStateMachine {
 
     // Task E2: タイムアウト処理
     pub fn handle_timeout(&mut self) -> Result<(), String> {
-        // TODO: 状態に応じたタイムアウト処理
-        // - SynSent/SynReceived: Closedへ
-        // - TimeWait: 2MSL後にClosedへ
-        todo!()
+        match self.current_state {
+            TcpState::SynSent | TcpState::SynReceived | TcpState::TimeWait => {
+                self.transition(TcpEvent::Timeout)?;
+                Ok(())
+            }
+            _ => Err(format!(
+                "Timeout not valid in state {:?}",
+                self.current_state
+            )),
+        }
     }
 
     // Task E3: 不正遷移の検出とログ
     pub fn get_state_history(&self) -> &[(TcpState, TcpState, TcpEvent)] {
-        // TODO: 状態遷移履歴を返す
         todo!()
     }
 

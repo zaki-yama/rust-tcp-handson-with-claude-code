@@ -206,3 +206,97 @@ RFCに準拠した正確な表現は以下のとおり：
 #### 結論
 
 Step04 README.md:302の「4-way handshake」は、**教育的にわかりやすくするための慣用表現**です。3-way handshakeとの対比で理解を助けるために使っています。実装においては、RFC 9293 Section 3.6とFigure 5の状態遷移を正しく実装できていれば、用語の違いは問題になりません。
+
+---
+
+## RFCにおけるタイムアウトの記述
+
+### 質問内容
+
+タイムアウトについて言及されているのはRFCのどこでしょうか
+
+### 回答
+
+#### RFC 9293で明示的に記載されているタイムアウト
+
+**RFC 9293 Figure 5 (TCP Connection State Diagram)** では、明示的に記載されているタイムアウト遷移は**1つだけ**です:
+
+```
+TIME-WAIT → CLOSED (Timeout=2MSL)
+```
+
+**詳細**:
+- **2MSL**: Maximum Segment Lifetime の2倍
+- **MSL**: RFC 9293では2分と定義されている（Section 3.3.2）
+- **目的**: 接続終了後、ネットワーク上の遅延パケットが消滅するのを待つ
+- **記述箇所**: Figure 5の状態遷移図で明示
+
+**TIME-WAIT状態の説明**（RFC 9293 Section 3.3.2より）:
+> "TIME-WAIT represents waiting for enough time to pass to be sure the remote TCP peer received the acknowledgment of its connection termination request and to avoid new connections being impacted by delayed segments from previous connections."
+
+#### 暗黙的なタイムアウト処理
+
+**SYN-SENT**や**SYN-RECEIVED**状態からのタイムアウト遷移は、RFC 9293 Figure 5の状態遷移図には**明示的に記載されていません**。
+
+しかし、実装上は以下のセクションで関連する記述があります:
+
+1. **Section 3.8.1 - Retransmission Timeout (RTO)**
+   - 再送タイムアウトの概念を説明
+   - 具体的なアルゴリズムはRFC 6298を参照
+
+2. **Section 3.8.3 - TCP Connection Failures**
+   - 接続失敗時の動作
+   - 再送試行回数の限界に達した場合の処理
+
+3. **Section 3.10.8 - Timeouts**
+   - タイムアウト処理全般の説明
+   - （提供されたRFC抜粋には詳細が含まれていなかった）
+
+#### 実際のTCP実装で必要なタイムアウト
+
+実際のTCP実装では、以下のタイムアウトが必要です:
+
+**接続確立フェーズ**:
+- **SYN-SENT状態**: SYN-ACKが返ってこない
+  - 複数回の再送試行（指数バックオフ）
+  - 最終的にCLOSEDへ遷移
+
+- **SYN-RECEIVED状態**: ACKが返ってこない
+  - 複数回のSYN-ACK再送
+  - 最終的にLISTENまたはCLOSEDへ遷移
+
+**接続終了フェーズ**:
+- **TIME-WAIT状態**: 2MSLタイマー（RFC明示）
+  - タイムアウト後にCLOSEDへ遷移
+
+**データ転送フェーズ**（Step05以降）:
+- 再送タイムアウト（RTO）
+- Keep-aliveタイマー
+- User Timeout（RFC 5482）
+
+#### Step04での扱い
+
+Step04のREADME.mdとテストコードでは、**学習目的で簡略化**しています:
+
+```rust
+// 実装が期待される動作（tests.rsより）
+SynSent + Timeout → Closed          // 簡略化
+SynReceived + Timeout → Closed      // 簡略化
+TimeWait + Timeout → Closed         // RFC準拠
+```
+
+これは以下の理由による簡略化です:
+- 再送ロジックはStep07で実装予定
+- 状態遷移の本質的な理解に集中
+- 複雑な再送アルゴリズムを避ける
+
+#### まとめ
+
+| タイムアウト種別 | RFC 9293 Figure 5 | 実装上の必要性 | Step04での扱い |
+|---------------|-------------------|--------------|--------------|
+| TIME-WAIT → CLOSED | ✅ 明示的に記載 | 必須 | 実装する |
+| SYN-SENT → CLOSED | ❌ 図には未記載 | 実装上必要 | 簡略版を実装 |
+| SYN-RECEIVED → CLOSED | ❌ 図には未記載 | 実装上必要 | 簡略版を実装 |
+| 再送タイムアウト | Section 3.8.1参照 | 必須 | Step07で実装予定 |
+
+**結論**: RFC 9293のFigure 5で明示されているタイムアウトは**TIME-WAIT→CLOSED（2MSL）のみ**です。接続確立時のタイムアウトは、再送ロジック（Section 3.8.1, RFC 6298）の一部として扱われており、状態遷移図には明示されていません。Step04では学習目的で簡略化して実装します。
