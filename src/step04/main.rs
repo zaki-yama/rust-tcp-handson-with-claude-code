@@ -264,13 +264,15 @@ impl TcpStateMachine {
 
     // Task E3: 不正遷移の検出とログ
     pub fn get_state_history(&self) -> &[(TcpState, TcpState, TcpEvent)] {
-        todo!()
+        &self.state_history
     }
 
     pub fn print_state_diagram(&self) {
         // TODO: 状態遷移履歴を見やすく表示
         // 形式: "1. Closed --[Connect]--> SynSent"
-        todo!()
+        for (i, (old_state, new_state, event)) in self.state_history.iter().enumerate() {
+            println!("{}. {:?} --[{:?}]--> {:?}", i, old_state, event, new_state);
+        }
     }
 }
 
