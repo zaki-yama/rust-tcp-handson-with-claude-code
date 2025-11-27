@@ -126,7 +126,7 @@
 - シーケンス番号管理
 - セグメント分割ロジック
 
-**RFC参照**: RFC 9293 - Section 3.3 (Sequence Numbers) (※RFC 793を2022年に更新)
+**RFC参照**: RFC 9293 - Section 3.4 (Sequence Numbers) (※RFC 793を2022年に更新)
 
 **成果物**:
 - データ送受信機能

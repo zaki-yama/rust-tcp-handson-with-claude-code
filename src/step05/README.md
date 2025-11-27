@@ -34,18 +34,19 @@ pub struct TcpConnection {
 
 ## RFC参照
 
-**RFC 9293 - Section 3.3 (Sequence Numbers)**
+**RFC 9293 - Section 3.4 (Sequence Numbers)**
 - シーケンス番号の役割と範囲
 - ISN（Initial Sequence Number）の生成
 - シーケンス番号の比較演算
 
-**RFC 9293 - Section 3.7 (Data Communication)**
+**RFC 9293 - Section 3.7 (Segmentation), Section 3.8 (Data Communication)**
 - データの送受信プロセス
 - バッファ管理
 - セグメント化の規則
 
-https://www.rfc-editor.org/rfc/rfc9293.html#section-3.3
+https://www.rfc-editor.org/rfc/rfc9293.html#section-3.4
 https://www.rfc-editor.org/rfc/rfc9293.html#section-3.7
+https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8
 
 ## 実装の流れ
 
@@ -93,7 +94,7 @@ impl SequenceNumber {
 ```
 
 **実装ヒント**:
-- RFC 9293 Section 3.3参照
+- RFC 9293 Section 3.4参照
 - シーケンス番号は32ビット符号なし整数
 - ラップアラウンド（0xFFFFFFFF → 0x00000000）を考慮した設計が必要
 
@@ -572,14 +573,15 @@ impl TcpConnection {
 - [ ] Phase D: セグメント化ロジック
 - [ ] Phase E: データ送受信統合
 - [ ] Phase F: すべてのテストがパス
-- [ ] RFC 9293 Section 3.3, 3.7との対応を確認
+- [ ] RFC 9293 Section 3.4, 3.7, 3.8との対応を確認
 - [ ] Step04の状態マシンとの統合を確認
 
 ## 参考リソース
 
 - [RFC 9293 - Transmission Control Protocol](https://www.rfc-editor.org/rfc/rfc9293.html)
-- RFC 9293 Section 3.3: Sequence Numbers
-- RFC 9293 Section 3.7: Data Communication
+- RFC 9293 Section 3.4: Sequence Numbers
+- RFC 9293 Section 3.7: Segmentation
+- RFC 9293 Section 3.8: Data Communication
 - RFC 6528: On the Generation of Secure ISNs
 
 ## 次のステップ

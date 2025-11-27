@@ -1,5 +1,5 @@
 // Step 5: データ送受信とシーケンス番号管理
-// RFC 9293 Section 3.3 (Sequence Numbers), Section 3.7 (Data Communication)
+// RFC 9293 Section 3.4 (Sequence Numbers), Section 3.7 (Segmentation), Section 3.8 (Data Communication)
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
