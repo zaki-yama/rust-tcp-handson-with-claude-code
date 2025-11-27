@@ -15,13 +15,11 @@ pub struct SequenceNumber(u32);
 
 impl SequenceNumber {
     pub fn new(value: u32) -> Self {
-        // TODO: Task A1 - SequenceNumberを生成
-        todo!("Task A1: Implement SequenceNumber::new")
+        Self(value)
     }
 
     pub fn value(&self) -> u32 {
-        // TODO: Task A1 - 内部の値を返す
-        todo!("Task A1: Implement SequenceNumber::value")
+        self.0
     }
 
     /// Task A2: シーケンス番号の加算
